@@ -1,5 +1,6 @@
 """A python script that walks through a zip file similar to the ``os.walk()`` function."""
 
+import argparse
 import os
 import zipfile
 from itertools import islice
@@ -134,8 +135,6 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
 
 def zip_cli():
     """Command line interface for the zip_walk function."""
-
-    import argparse
 
     parser = argparse.ArgumentParser(description="Walk through a zip file and prints the output.")
     parser.add_argument("zip_path", help="Path to the zip file.")

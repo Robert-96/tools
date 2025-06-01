@@ -1,7 +1,7 @@
 """This module provides utilities for comparing the contents of two zip files."""
 
-import zipfile
 import difflib
+import zipfile
 from pathlib import Path
 
 
@@ -56,6 +56,13 @@ def zip_content_diff(zip1_path, zip2_path):
                 content2 = f2.read().decode(errors="replace").splitlines()
 
                 if content1 != content2:
-                    diff[file] = "\n".join(difflib.unified_diff(content1, content2, fromfile=f"{zip1_name}:{file}", tofile=f"{zip2_name}:{file}", lineterm=""))
+                    diff[file] = "\n".join(
+                        difflib.unified_diff(
+                            content1, content2,
+                            fromfile=f"{zip1_name}:{file}",
+                            tofile=f"{zip2_name}:{file}",
+                            lineterm=""
+                        )
+                    )
 
     return diff

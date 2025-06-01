@@ -7,7 +7,6 @@ import pytest
 from src.zipwalk import zip_content, zip_tree, zip_walk
 from tests.conftest import create_test_zip
 
-
 ZIP_FLAT_CONTENT = [
     ("file_0.txt", "0"),
     ("file_1.txt", "1"),
@@ -115,10 +114,14 @@ def test_zip_walk_flat_structure(tmp_path):
 
 def test_zip_walk_empty_zip(tmp_path):
     """Test zip_walk with an empty zip file."""
+
     zip_path = tmp_path / "empty.zip"
+
     with zipfile.ZipFile(zip_path, 'w'):
         pass
+
     result = list(zip_walk(zip_path))
+
     assert result == [('/', set(), set())]
 
 

@@ -1,7 +1,6 @@
-from src.zipdiff import zip_diff, zip_content_diff
-
 import pytest
 
+from src.zipdiff import zip_diff, zip_content_diff
 from tests.conftest import create_test_zip
 
 
@@ -72,7 +71,7 @@ def test_zip_content_diff_empty(tmp_path):
 
     diff = zip_content_diff(zip1, zip2)
 
-    assert diff == {}
+    assert not diff
 
 
 def test_zip_content_diff_same_file(tmp_path):
@@ -83,7 +82,7 @@ def test_zip_content_diff_same_file(tmp_path):
 
     diff = zip_content_diff(zip1, zip1)
 
-    assert diff == {}
+    assert not diff
 
 
 def test_zip_content_diff_flat(tmp_path):
