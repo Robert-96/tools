@@ -1,9 +1,11 @@
+import io
 import zipfile
 from pathlib import Path
+from contextlib import redirect_stdout
 
 import pytest
 
-from src.zipwalk import zip_walk, zip_content
+from src.zipwalk import zip_walk, zip_content, zip_tree
 
 
 ZIP_FLAT_CONTENT = [
@@ -100,7 +102,7 @@ def test_zip_content_empty_directory(tmp_path):
     assert filenames == set()
 
 
-def test_zip_content_nonexistent_path(tmp_path):
+def test_zip_content_non_existent_path(tmp_path):
     """Test zip_content for a non-existent path."""
     content = [
         ("file1.txt", "This is file 1"),
@@ -141,11 +143,11 @@ def test_zip_walk_empty_zip(tmp_path):
     assert result == [('/', set(), set())]
 
 
-def test_zip_walk_nonexistent_file():
+def test_zip_walk_non_existent_file():
     """Test zip_walk with a non-existent file."""
 
     with pytest.raises(FileNotFoundError):
-        list(zip_walk("nonexistent.zip"))
+        list(zip_walk("non_existent.zip"))
 
 
 def test_zip_walk_invalid_zip(tmp_path):
@@ -156,3 +158,22 @@ def test_zip_walk_invalid_zip(tmp_path):
 
     with pytest.raises(zipfile.BadZipFile):
         list(zip_walk(invalid_zip_path))
+
+
+def test_zip_tree_subdirectory(tmp_path):
+    content = [
+        ("file1.txt", "This is file 1"),
+        ("dir1/file2.txt", "This is file 2"),
+        ("dir1/file3.txt", "This is file 3"),
+        ("dir2/file4.txt", "This is file 4"),
+    ]
+
+    zip_path = create_test_zip(tmp_path, content=content)
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        zip_tree(zip_path)
+    result = f.getvalue().strip()
+
+    assert result.startswith("test.zip\n")
+    assert result.endswith("2 directories, 4 files")

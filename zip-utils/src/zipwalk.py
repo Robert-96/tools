@@ -3,6 +3,7 @@
 import os
 import zipfile
 from pathlib import Path
+from itertools import islice
 
 
 def zip_content(zip_path, path=None):
@@ -73,7 +74,7 @@ def zip_walk(zip_path):
             yield dirpath, dirnames, filenames
 
 
-def zip_tree(zip_path, level=-1, dirs_only=False):
+def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
     """Walk through a zip file and prints the output.
 
     Args:
@@ -91,22 +92,44 @@ def zip_tree(zip_path, level=-1, dirs_only=False):
     tee =    '├── '
     last =   '└── '
 
-    def print_tree(dirpath, dirnames, filenames, prefix="  "):
-        items = {{"name": dirname, "type": "dir"} for dirname in dirnames}
-        items.update({{"name": filename, "type": "file"} for filename in filenames})
-        items = sorted(items, key=lambda x: x["name"])
+    file_count = 0
+    dir_count = 0
 
-        if not items:
+    def inner(zip_path: Path, path: Path=None, prefix: str='', level=-1):
+        nonlocal file_count, dir_count
+
+        if not level:
             return
 
-        for dirname in sorted(dirnames):
-            print(f"{prefix}├─ {dirname}/")
+        inner_dirs, inner_files = zip_content(zip_path, path=path)
 
-        for filename in sorted(filenames):
-            print(f"{prefix}├─ {filename}")
+        contents = {(inner_dir_path, True) for inner_dir_path in inner_dirs}
+        if not dirs_only:
+            contents |= {(inner_file_path, False) for inner_file_path in inner_files}
 
-    for dirpath, dirnames, filenames in zip_walk(zip_path):
-        pass
+        pointers = [tee] * (len(contents) - 1) + [last]
+
+        for pointer, (current_path, is_dir) in zip(pointers, contents):
+            if is_dir:
+                yield prefix + pointer + current_path
+                dir_count += 1
+                extension = branch if pointer == tee else space
+                yield from inner(zip_path, current_path, prefix=prefix+extension, level=level-1)
+            elif not dirs_only:
+                file_count += 1
+                yield prefix + pointer + current_path
+
+    zip_path = Path(zip_path)
+    print(zip_path.name)
+    iterator = inner(zip_path, path=None, level=level)
+
+    for line in islice(iterator, length_limit):
+        print(line)
+
+    if next(iterator, None):
+        print(f'... length_limit, {length_limit}, reached, counted:')
+
+    print(f"\n{dir_count} directories" + (f", {file_count} files" if file_count else ''))
 
 
 def zip_cli():
