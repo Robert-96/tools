@@ -11,12 +11,17 @@ jobs:
     permissions:
       contents: read
       packages: read
-      # To report GitHub Actions status checks
       statuses: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Load super-linter env variables
+        run: |
+          cat .github/super-linter.env >> "$GITHUB_ENV"
 
       - name: Run Super-Linter
         uses: super-linter/super-linter@v7
