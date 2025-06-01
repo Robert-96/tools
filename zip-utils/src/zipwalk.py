@@ -2,8 +2,8 @@
 
 import os
 import zipfile
-from pathlib import Path
 from itertools import islice
+from pathlib import Path
 
 
 def zip_content(zip_path, path=None):
@@ -85,17 +85,17 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
     """
 
     # prefix components:
-    space =  '    '
+    space = '    '
     branch = '│   '
 
     # pointers:
-    tee =    '├── '
-    last =   '└── '
+    tee = '├── '
+    last = '└── '
 
     file_count = 0
     dir_count = 0
 
-    def inner(zip_path: Path, path: Path=None, prefix: str='', level=-1):
+    def inner(zip_path: Path, path: Path | None = None, prefix: str = '', level=-1):
         nonlocal file_count, dir_count
 
         if not level:

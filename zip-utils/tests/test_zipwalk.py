@@ -1,11 +1,11 @@
 import io
 import zipfile
-from pathlib import Path
 from contextlib import redirect_stdout
 
 import pytest
 
-from src.zipwalk import zip_walk, zip_content, zip_tree
+from src.zipwalk import zip_content, zip_tree, zip_walk
+from tests.conftest import create_test_zip
 
 
 ZIP_FLAT_CONTENT = [
@@ -33,30 +33,9 @@ EXPECTED_NESTED_FLAT_CONTENT = []
 EXPECTED_NESTED_FLAT_WALK = []
 
 
-def create_test_zip(tmp_path, content):
-    """Util function to create a test zip file."""
-
-    zip_path = tmp_path / "test.zip"
-
-    with zipfile.ZipFile(zip_path, 'w') as zf:
-        for item_path, item_content in content:
-            item_path = Path(item_path)
-
-            if item_path.is_dir():
-                zf.mkdir(item_path)
-                continue
-
-            item_parent = str(item_path.parent)
-            if item_parent and not item_parent == "." and f"{item_parent}/" not in zf.namelist():
-                zf.mkdir(item_parent)
-
-            zf.writestr(str(item_path), item_content)
-
-    return zip_path
-
-
 def test_zip_content_root(tmp_path):
     """Test zip_content for the root directory."""
+
     content = [
         ("file1.txt", "This is file 1"),
         ("file2.txt", "This is file 2"),
