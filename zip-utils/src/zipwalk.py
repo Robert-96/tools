@@ -1,13 +1,13 @@
 """A python script that walks through a zip file similar to the ``os.walk()`` function."""
 
-import argparse
 import os
 import zipfile
 from itertools import islice
 from pathlib import Path
+from typing import Optional, Union
 
 
-def zip_content(zip_path, path=None):
+def zip_content(zip_path: Union[str, Path], path: Optional[Union[str, Path]] = None):
     """Get the content of a zip file at a specific path. If the path is ``None``,
     it returns the content of the root directory.
 
@@ -40,7 +40,7 @@ def zip_content(zip_path, path=None):
         return dirnames, filenames
 
 
-def zip_walk(zip_path):
+def zip_walk(zip_path: Union[str, Path]):
     """Walk through a zip file similar to ``os.walk()``.
 
     Args:
@@ -75,13 +75,14 @@ def zip_walk(zip_path):
             yield dirpath, dirnames, filenames
 
 
-def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
+def zip_tree(zip_path: Union[str, Path], level: int = -1, dirs_only: bool = False, length_limit: int = 1000):
     """Walk through a zip file and prints the output.
 
     Args:
         zip_path (str): Path to the zip file.
         level (int): The level of the tree to print. If -1, print all levels.
         dirs_only (bool): If True, only print directories.
+        length_limit (int): Maximum number of lines to print. If exceeded, truncates the output.
 
     """
 
@@ -96,7 +97,7 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
     file_count = 0
     dir_count = 0
 
-    def inner(zip_path: Path, path: Path | None = None, prefix: str = '', level=-1):
+    def inner(zip_path: Path, path: Optional[Path] = None, prefix: str = '', level=-1):
         nonlocal file_count, dir_count
 
         if not level:
@@ -108,6 +109,9 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
         if not dirs_only:
             contents |= {(inner_file_path, False) for inner_file_path in inner_files}
 
+        # Create a list of pointers for tree visualization:
+        # - Use `tee` for all items except the last one.
+        # - Use `last` for the final item to indicate the end of a branch.
         pointers = [tee] * (len(contents) - 1) + [last]
 
         for pointer, (current_path, is_dir) in zip(pointers, contents):
@@ -122,8 +126,8 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
 
     zip_path = Path(zip_path)
     print(zip_path.name)
-    iterator = inner(zip_path, path=None, level=level)
 
+    iterator = inner(zip_path, path=None, level=level)
     for line in islice(iterator, length_limit):
         print(line)
 
@@ -131,35 +135,3 @@ def zip_tree(zip_path, level=-1, dirs_only=False, length_limit=1000):
         print(f'... length_limit, {length_limit}, reached, counted:')
 
     print(f"\n{dir_count} directories" + (f", {file_count} files" if file_count else ''))
-
-
-def zip_cli():
-    """Command line interface for the zip_walk function."""
-
-    parser = argparse.ArgumentParser(description="Walk through a zip file and prints the output.")
-    parser.add_argument("zip_path", help="Path to the zip file.")
-    args = parser.parse_args()
-
-    def print_tree(dirpath, dirnames, filenames, level=0):
-        indent = "    " * level
-
-        print(f"{indent}{os.path.basename(dirpath) if dirpath != '/' else '/'}")
-
-        for dirname in sorted(dirnames):
-            print(f"{indent}    {dirname}/")
-
-        for filename in sorted(filenames):
-            print(f"{indent}    {filename}")
-
-    print(args.zip_path)
-    for dirpath, dirnames, filenames in zip_walk(args.zip_path):
-
-        level_map = {"/": 0}
-        level = level_map.get(dirpath, 0)
-        print_tree(dirpath, dirnames, filenames, level)
-        for dirname in dirnames:
-            level_map[os.path.join(dirpath, dirname)] = level + 1
-
-
-if __name__ == "__main__":
-    zip_cli()

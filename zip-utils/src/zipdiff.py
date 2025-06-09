@@ -3,9 +3,10 @@
 import difflib
 import zipfile
 from pathlib import Path
+from typing import Union
 
 
-def zip_diff(zip1_path, zip2_path):
+def zip_filenames_diff(zip1_path: Union[str, Path], zip2_path: Union[str, Path]):
     """Compare the file names in two zip files and return the differences.
 
     Args:
@@ -18,17 +19,13 @@ def zip_diff(zip1_path, zip2_path):
 
     with zipfile.ZipFile(zip1_path, 'r') as zip1, zipfile.ZipFile(zip2_path, 'r') as zip2:
         zip1_files = set(zip1.namelist())
-        print(f"Files in {zip1_path}: {zip1_files}")
-
         zip2_files = set(zip2.namelist())
-        print(f"Files in {zip2_path}: {zip2_files}")
 
         diff = zip1_files - zip2_files
-
         return diff
 
 
-def zip_content_diff(zip1_path, zip2_path):
+def zip_content_diff(zip1_path: Union[str, Path], zip2_path: Union[str, Path]):
     """Compare the contents of two zip files and return a dictionary of differences.
     The keys are file names, and the values are the differences in content.
 

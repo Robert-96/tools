@@ -1,6 +1,6 @@
 import pytest
 
-from src.zipdiff import zip_diff, zip_content_diff
+from src.zipdiff import zip_filenames_diff, zip_content_diff
 from tests.conftest import create_test_zip
 
 
@@ -25,7 +25,7 @@ def test_zip_with_non_existent_file(tmp_path):
     """Test zip_diff with a zip file containing a non-existent file."""
 
     with pytest.raises(FileNotFoundError):
-        zip_diff(tmp_path / "non-existent.zip", tmp_path / "another-non-existent.zip")
+        zip_filenames_diff(tmp_path / "non-existent.zip", tmp_path / "another-non-existent.zip")
 
 
 def test_zip_diff_empty(tmp_path):
@@ -34,7 +34,7 @@ def test_zip_diff_empty(tmp_path):
     zip1 = create_test_zip(tmp_path, [], zipfile_name="zip1.zip")
     zip2 = create_test_zip(tmp_path, [], zipfile_name="zip2.zip")
 
-    diff = zip_diff(zip1, zip2)
+    diff = zip_filenames_diff(zip1, zip2)
 
     assert diff == set()
 
@@ -45,7 +45,7 @@ def test_zip_diff_same_file(tmp_path):
     content = [("file.txt", "This is a test file.")]
     zip1 = create_test_zip(tmp_path, content, zipfile_name="zip1.zip")
 
-    diff = zip_diff(zip1, zip1)
+    diff = zip_filenames_diff(zip1, zip1)
 
     assert diff == set()
 
@@ -56,8 +56,8 @@ def test_zip_diff_flat(tmp_path):
     zip1 = create_test_zip(tmp_path, ZIP_FLAT_01_CONTENT, zipfile_name="zip1.zip")
     zip2 = create_test_zip(tmp_path, ZIP_FLAT_02_CONTENT, zipfile_name="zip2.zip")
 
-    diff1 = zip_diff(zip1, zip2)
-    diff2 = zip_diff(zip2, zip1)
+    diff1 = zip_filenames_diff(zip1, zip2)
+    diff2 = zip_filenames_diff(zip2, zip1)
 
     assert diff1 == {"file_1.txt", "B/file_3.txt"}
     assert diff2 == {"file_3.txt", "B/file_4.txt"}

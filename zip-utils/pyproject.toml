@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zip-utils"
+description = "Hello CLI"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dynamic = ["version", "dependencies"]
+
+[project.scripts]
+zip-utils = "src.cli:app"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "src.__version__.VERSION"}
+dependencies = {file = "requirements.txt"}

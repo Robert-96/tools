@@ -42,3 +42,23 @@ def test_create_test_zip(tmp_path):
             "dir1/dir2/",
             "dir1/dir2/file3.txt",
         }
+
+
+if __name__ == "__main__":
+    ZIP_FLAT_01_CONTENT = [
+        ("file_0.txt", "Old"),
+        ("file_1.txt", "Old"),
+        ("A/file_2.txt", "Old"),
+        ("B/file_3.txt", "Old"),
+    ]
+    ZIP_FLAT_02_CONTENT = [
+        ("file_0.txt", "New"),
+        ("file_3.txt", "New"),
+        ("A/file_2.txt", "New"),
+        ("B/file_4.txt", "New"),
+    ]
+    tmp_path = Path("./data")
+    tmp_path.mkdir(exist_ok=True)
+
+    zip1 = create_test_zip(tmp_path, ZIP_FLAT_01_CONTENT, zipfile_name="zip1.zip")
+    zip2 = create_test_zip(tmp_path, ZIP_FLAT_02_CONTENT, zipfile_name="zip2.zip")

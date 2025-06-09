@@ -1,10 +1,10 @@
 """Zip utilities package."""
 
-from src.zipdiff import zip_content_diff, zip_diff
+from src.zipdiff import zip_content_diff, zip_filenames_diff
 from src.zipwalk import zip_content, zip_tree, zip_walk
 
 __all__ = [
-    "zip_diff",
+    "zip_filenames_diff",
     "zip_content_diff",
     "zip_content",
     "zip_walk",
