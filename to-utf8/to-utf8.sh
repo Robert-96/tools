@@ -26,6 +26,7 @@ remove_bom() {
 convert_to_utf8() {
     # Function to convert a file to UTF-8 encoding
     # Usage: convert_to_utf8 <file>
+
     local file="$1"
 
     if [[ -f "$file" ]]; then
@@ -46,8 +47,8 @@ main() {
     fi
 
     for file in "$@"; do
-        remove_bom "$file"
         convert_to_utf8 "$file"
+        remove_bom "$file"
     done
 }
 
