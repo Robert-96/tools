@@ -2,6 +2,8 @@ name: Tests
 
 on: [push, pull_request, workflow_dispatch]
 
+permissions: read-all
+
 jobs:
   lint:
     name: Lint Code Base
