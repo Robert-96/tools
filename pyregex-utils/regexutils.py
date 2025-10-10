@@ -308,7 +308,7 @@ def replace_within_ranges(
         >>> replace_within_ranges('hello world', r'\\w+', 'WORD', [(0, 5)], count=1)
         'WORD world'
 
-        >>> replace_within_ranges('hello world', r'\\w+', 'WORD', [(0, 5)], flags=re.IGNORECASE) # Case-insensitive replacement
+        >>> replace_within_ranges('hello world', r'\\w+', 'WORD', [(0, 5)], flags=re.IGNORECASE)
         'WORD world'
     """
 
@@ -368,7 +368,6 @@ def replace_with_excluded_ranges(
 
     def replacement_function(match):
         nonlocal replaced
-        nonlocal count
 
         if count and replaced >= count:
             return match.group(0)
