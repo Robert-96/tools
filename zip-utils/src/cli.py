@@ -9,7 +9,7 @@ from typing_extensions import Annotated
 from rich.console import Console
 from rich.syntax import Syntax
 
-from src.zipdiff import zip_content_diff, zip_filenames_diff
+from src.zipdiff import zip_content_diff
 from src.zipwalk import zip_tree
 from src.__version__ import VERSION
 
