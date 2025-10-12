@@ -25,16 +25,36 @@ jobs:
         run: |
           cat .github/super-linter.env >> "$GITHUB_ENV"
 
-      - name: Set up Python for PyLint
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies or PyLint
-        run: |
-          python -m pip install -r requirements.txt
-
       - name: Run Super-Linter
         uses: super-linter/super-linter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-pyregex-utils:
+    name: Test pyregex-utils
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install pytest
+
+      - name: Run Tests
+        run: |
+          python -m pytest -v pyregex-utils/ --doctest-modules
