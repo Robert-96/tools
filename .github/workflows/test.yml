@@ -25,6 +25,15 @@ jobs:
         run: |
           cat .github/super-linter.env >> "$GITHUB_ENV"
 
+      - name: Set up Python for PyLint
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies or PyLint
+        run: |
+          python -m pip install -r requirements.txt
+
       - name: Run Super-Linter
         uses: super-linter/super-linter@v7
         env:
