@@ -9,9 +9,9 @@ from typing_extensions import Annotated
 from rich.console import Console
 from rich.syntax import Syntax
 
-from src.zipdiff import zip_content_diff
-from src.zipwalk import zip_tree
-from src.__version__ import VERSION
+from .zipdiff import zip_content_diff
+from .zipwalk import zip_tree
+from .__version__ import VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,13 @@ def main(
     ctx: typer.Context,
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Enable verbose output.")] = False,
     version: Annotated[
-        Optional[bool], typer.Option("--version", callback=version_callback, is_eager=True, help="Show the version of the CLI.")
+        Optional[bool],
+        typer.Option(
+            "--version",
+            callback=version_callback,
+            is_eager=True,
+            help="Show the version of the CLI."
+        )
     ] = None,
 ):
     """Zip utilities command line interface."""
