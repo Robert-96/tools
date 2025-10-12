@@ -30,7 +30,7 @@ runner = CliRunner()
 def test_cli_help_messages(args):
     result = runner.invoke(app, args)
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output:\n {result.output}"
     assert result.output
 
 
@@ -38,7 +38,7 @@ def test_zip_diff(tmp_path):
     zip1 = create_test_zip(tmp_path, ZIP_FLAT_01_CONTENT, zipfile_name="zip1.zip")
     zip2 = create_test_zip(tmp_path, ZIP_FLAT_02_CONTENT, zipfile_name="zip2.zip")
 
-    result = runner.invoke(app, ["zip-diff", str(zip1), str(zip2)])
+    result = runner.invoke(app, ["diff", str(zip1), str(zip2)])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, f"Output:\n {result.output}"
     assert result.output != ""
