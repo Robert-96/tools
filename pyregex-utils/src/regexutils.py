@@ -3,7 +3,12 @@
 import re
 
 
-def _ranges_overlap(start1, end1, start2, end2):
+def _ranges_overlap(
+    start1,
+    end1,
+    start2,
+    end2
+):
     """Check if two ranges [start1, end1] and [start2, end2] overlap.
 
     Args:
