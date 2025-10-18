@@ -2,7 +2,7 @@ name: Tests
 
 on: [push, pull_request, workflow_dispatch]
 
-permissions: read-all
+permissions: {}
 
 jobs:
   lint:
@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Load super-linter env variables
         run: |
@@ -40,11 +41,16 @@ jobs:
       packages: read
       statuses: write
 
+    defaults:
+      run:
+        working-directory: ./pyregex-utils
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -53,13 +59,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -r pyregex-utils/requirements-dev.txt
+          python -m pip install -r requirements-dev.txt
 
       - name: Run Tests
         run: |
-          python -m pytest -v pyregex-utils/ --doctest-modules --cov-report markdown
+          python -m pytest -v --doctest-modules --cov-report markdown
 
       - name: Add markdown summary
         run: |
-          echo "### Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          cat coverage.md >> $GITHUB_STEP_SUMMARY
+          echo "# Test Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
+          cat coverage.md >> "$GITHUB_STEP_SUMMARY"
