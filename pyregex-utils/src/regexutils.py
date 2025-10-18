@@ -3,11 +3,11 @@
 import re
 
 
-def _ranges_overlap(
-    start1,
-    end1,
-    start2,
-    end2
+def _do_ranges_overlap(
+    start1: int,
+    end1: int,
+    start2: int,
+    end2: int
 ):
     """Check if two ranges [start1, end1] and [start2, end2] overlap.
 
@@ -21,17 +21,17 @@ def _ranges_overlap(
         bool: True if the ranges overlap, False otherwise.
 
     Examples:
-        >>> _ranges_overlap(1, 5, 4, 6)
+        >>> _do_ranges_overlap(1, 5, 4, 6)
         True
-        >>> _ranges_overlap(1, 3, 4, 6)
+        >>> _do_ranges_overlap(1, 3, 4, 6)
         False
-        >>> _ranges_overlap(1, 5, 5, 10)
+        >>> _do_ranges_overlap(1, 5, 4, 10)
         True
-        >>> _ranges_overlap(1, 5, 6, 10)
+        >>> _do_ranges_overlap(1, 5, 6, 10)
         False
     """
 
-    return start1 <= end2 and start2 <= end1
+    return start1 <= end2 - 1 and start2 <= end1 - 1
 
 
 def find_within_ranges(
@@ -40,7 +40,7 @@ def find_within_ranges(
     included_ranges,
     count=0,
     flags=0
-):
+) -> list[re.Match]:
     """Find all occurrences of a pattern in a string, only within specified ranges.
 
     Args:
@@ -55,22 +55,22 @@ def find_within_ranges(
 
     Examples:
         >>> find_within_ranges('foo baz foo', r'foo', [(7, 10)])
-        ['foo']
+        [<re.Match object; span=(8, 11), match='foo'>]
 
         >>> find_within_ranges('abc 123 def 456', r'\\d+', [(4, 7)])
-        ['123']
+        [<re.Match object; span=(4, 7), match='123'>]
 
         >>> find_within_ranges('hello world', r'\\w+', [(0, 5)])
-        ['hello']
+        [<re.Match object; span=(0, 5), match='hello'>]
 
         >>> find_within_ranges('hello world', r'\\w+', [(0, 5), (6, 11)])
-        ['hello', 'world']
+        [<re.Match object; span=(0, 5), match='hello'>, <re.Match object; span=(6, 11), match='world'>]
 
         >>> find_within_ranges('hello world', r'\\w+', [(0, 5)], count=1)
-        ['hello']
+        [<re.Match object; span=(0, 5), match='hello'>]
 
         >>> find_within_ranges('hello world', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
-        ['hello']
+        [<re.Match object; span=(0, 5), match='hello'>]
     """
 
     matches = []
@@ -83,12 +83,62 @@ def find_within_ranges(
         start, end = match.span()
 
         for in_start, in_end in included_ranges:
-            if _ranges_overlap(start, end - 1, in_start, in_end - 1):
-                matches.append(match.group(0))
+            if _do_ranges_overlap(start, end, in_start, in_end):
+                matches.append(match)
                 found += 1
                 break
 
     return matches
+
+
+def find_strings_within_ranges(
+    string,
+    pattern,
+    included_ranges,
+    count=0,
+    flags=0
+) -> list[str]:
+    """Find all occurrences of a pattern in a string, only within specified ranges.
+
+    Args:
+        string (str): The input string to search.
+        pattern (str): The regex pattern to search for.
+        included_ranges (list of tuples): List of (start, end) tuples specifying ranges to include for searching.
+        count (int, optional): Maximum number of pattern occurrences to find. Defaults to 0 (find all).
+        flags (int, optional): Regex flags to use. Defaults to 0.
+
+    Returns:
+        list: A list of all matches found within the specified ranges.
+
+    Examples:
+        >>> find_strings_within_ranges('foo baz foo', r'foo', [(7, 10)])
+        ['foo']
+
+        >>> find_strings_within_ranges('abc 123 def 456', r'\\d+', [(4, 7)])
+        ['123']
+
+        >>> find_strings_within_ranges('hello world', r'\\w+', [(0, 5)])
+        ['hello']
+
+        >>> find_strings_within_ranges('hello world', r'\\w+', [(0, 5), (6, 11)])
+        ['hello', 'world']
+
+        >>> find_strings_within_ranges('hello world', r'\\w+', [(0, 5)], count=1)
+        ['hello']
+
+        >>> find_strings_within_ranges('hello world', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
+        ['hello']
+    """
+
+    return [
+        match.group(0) for match in find_within_ranges(
+            string,
+            pattern,
+            included_ranges,
+            count,
+            flags
+        )
+    ]
 
 
 def find_with_excluded_ranges(
@@ -141,7 +191,7 @@ def find_with_excluded_ranges(
 
         overlap = False
         for ex_start, ex_end in excluded_ranges:
-            if _ranges_overlap(start, end - 1, ex_start, ex_end - 1):
+            if _do_ranges_overlap(start, end, ex_start, ex_end):
                 overlap = True
                 break
 
@@ -158,7 +208,7 @@ def find_within_patterns(
     included_patterns,
     count=0,
     flags=0
-):
+) -> list[re.Match]:
     """Find all occurrences of a pattern in a string, only within specified patterns.
 
     Args:
@@ -173,23 +223,22 @@ def find_within_patterns(
 
     Examples:
         >>> find_within_patterns('foo bar "foo"', r'foo', [r'"[^"]*"'])
-        ['foo']
+        [<re.Match object; span=(1, 4), match='foo'>]
 
         >>> find_within_patterns('abc 123 def "456"', r'\\d+', [r'"[^"]*"'])
-        ['456']
+        [<re.Match object; span=(1, 4), match='456'>]
 
         >>> find_within_patterns('hello world (goodbye)', r'\\w+', [r'\\(.*?\\)'])
-        ['goodbye']
+        [<re.Match object; span=(1, 8), match='goodbye'>]
 
         >>> find_within_patterns('foo bar (foo) [baz]', r'\\w+', [r'\\(.*?\\)', r'\\[.*?\\]'])
-        ['foo', 'baz']
+        [<re.Match object; span=(1, 4), match='foo'>, <re.Match object; span=(1, 4), match='baz'>]
 
         >>> find_within_patterns('foo bar (foo) [baz]', r'\\w+', [r'\\(.*?\\)', r'\\[.*?\\]'], count=1)
-        ['foo']
+        [<re.Match object; span=(1, 4), match='foo'>]
 
         >>> find_within_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
-        ['worldwide', 'WORLDWIDE']
-
+        [<re.Match object; span=(0, 9), match='worldwide'>, <re.Match object; span=(0, 9), match='WORLDWIDE'>]
     """
 
     matches = []
@@ -201,10 +250,61 @@ def find_within_patterns(
             for match in re.finditer(pattern, string[start:end], flags=flags):
                 if count and found >= count:
                     break
-                matches.append(match.group(0))
+                matches.append(match)
                 found += 1
 
     return matches
+
+
+def find_strings_within_patterns(
+    string,
+    pattern,
+    included_patterns,
+    count=0,
+    flags=0
+) -> list[str]:
+    """Find all occurrences of a pattern in a string, only within specified patterns.
+
+    Args:
+        string (str): The input string to search.
+        pattern (str): The regex pattern to search for.
+        included_patterns (list of str): List of regex patterns specifying matches to include for searching.
+        count (int, optional): Maximum number of pattern occurrences to find. Defaults to 0 (find all).
+        flags (int, optional): Regex flags to use. Defaults to 0.
+
+    Returns:
+        list: A list of all matches found within the included patterns.
+
+    Examples:
+        >>> find_strings_within_patterns('foo bar "foo"', r'foo', [r'"[^"]*"'])
+        ['foo']
+
+        >>> find_strings_within_patterns('abc 123 def "456"', r'\\d+', [r'"[^"]*"'])
+        ['456']
+
+        >>> find_strings_within_patterns('hello world (goodbye)', r'\\w+', [r'\\(.*?\\)'])
+        ['goodbye']
+
+        >>> find_strings_within_patterns('foo bar (foo) [baz]', r'\\w+', [r'\\(.*?\\)', r'\\[.*?\\]'])
+        ['foo', 'baz']
+
+        >>> find_strings_within_patterns('foo bar (foo) [baz]', r'\\w+', [r'\\(.*?\\)', r'\\[.*?\\]'], count=1)
+        ['foo']
+
+        >>> find_strings_within_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
+        ['worldwide', 'WORLDWIDE']
+
+    """
+
+    return [
+        match.group(0) for match in find_within_patterns(
+            string,
+            pattern,
+            included_patterns,
+            count,
+            flags
+        )
+    ]
 
 
 def find_with_excluded_patterns(
@@ -228,22 +328,22 @@ def find_with_excluded_patterns(
 
     Examples:
         >>> find_with_excluded_patterns('foo foot foo', r'foo', [r'foot'])
-        ['foo', 'foo']
+        [<re.Match object; span=(0, 3), match='foo'>, <re.Match object; span=(9, 12), match='foo'>]
 
         >>> find_with_excluded_patterns('abc 123 def 456', r'\\d+', [r'123'])
-        ['456']
+        [<re.Match object; span=(12, 15), match='456'>]
 
         >>> find_with_excluded_patterns('abc 123 def 1234', r'\\d+', [r'1234'])
-        ['123']
+        [<re.Match object; span=(4, 7), match='123'>]
 
         >>> find_with_excluded_patterns('hello world', r'\\w+', [r'hello'])
-        ['world']
+        [<re.Match object; span=(6, 11), match='world'>]
 
         >>> find_with_excluded_patterns('foo bar foo bar', r'\\w+', [r'foo'], count=1)
-        ['bar']
+        [<re.Match object; span=(4, 7), match='bar'>]
 
         >>> find_with_excluded_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
-        ['world', 'WORLD']
+        [<re.Match object; span=(0, 5), match='world'>, <re.Match object; span=(16, 21), match='WORLD'>]
     """
 
     matches = []
@@ -262,15 +362,65 @@ def find_with_excluded_patterns(
 
         overlap = False
         for ex_start, ex_end in excluded_spans:
-            if _ranges_overlap(start, end - 1, ex_start, ex_end - 1):
+            if _do_ranges_overlap(start, end, ex_start, ex_end):
                 overlap = True
                 break
 
         if not overlap:
-            matches.append(match.group(0))
+            matches.append(match)
             found += 1
 
     return matches
+
+
+def find_strings_with_excluded_patterns(
+    string,
+    pattern,
+    excluded_patterns,
+    count=0,
+    flags=0
+):
+    """Find all occurrences of a pattern in a string, excluding matches within specified patterns.
+
+    Args:
+        string (str): The input string to search.
+        pattern (str): The regex pattern to search for.
+        excluded_patterns (list of str): List of regex patterns specifying matches to exclude from searching.
+        count (int, optional): Maximum number of pattern occurrences to find. Defaults to 0 (find all).
+        flags (int, optional): Regex flags to use. Defaults to 0.
+
+    Returns:
+        list: A list of all matches found outside the excluded patterns.
+
+    Examples:
+        >>> find_strings_with_excluded_patterns('foo foot foo', r'foo', [r'foot'])
+        ['foo', 'foo']
+
+        >>> find_strings_with_excluded_patterns('abc 123 def 456', r'\\d+', [r'123'])
+        ['456']
+
+        >>> find_strings_with_excluded_patterns('abc 123 def 1234', r'\\d+', [r'1234'])
+        ['123']
+
+        >>> find_strings_with_excluded_patterns('hello world', r'\\w+', [r'hello'])
+        ['world']
+
+        >>> find_strings_with_excluded_patterns('foo bar foo bar', r'\\w+', [r'foo'], count=1)
+        ['bar']
+
+        >>> find_strings_with_excluded_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
+        ['world', 'WORLD']
+    """
+
+    return [
+        match.group(0) for match in find_with_excluded_patterns(
+            string,
+            pattern,
+            excluded_patterns,
+            count,
+            flags
+        )
+    ]
 
 
 def replace_within_ranges(
@@ -320,7 +470,7 @@ def replace_within_ranges(
     def replacement_function(match):
         start, end = match.span()
         for in_start, in_end in included_ranges:
-            if _ranges_overlap(start, end - 1, in_start, in_end - 1):
+            if _do_ranges_overlap(start, end, in_start, in_end):
                 return replacement
         return match.group(0)
 
@@ -379,7 +529,7 @@ def replace_with_excluded_ranges(
 
         start, end = match.span()
         for ex_start, ex_end in excluded_ranges:
-            if _ranges_overlap(start, end - 1, ex_start, ex_end - 1):
+            if _do_ranges_overlap(start, end, ex_start, ex_end):
                 return match.group(0)
 
         replaced += 1
