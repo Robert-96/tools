@@ -8,7 +8,7 @@ def _do_ranges_overlap(
     end1: int,
     start2: int,
     end2: int
-):
+) -> bool:
     """Check if two ranges [start1, end1] and [start2, end2] overlap.
 
     Args:
@@ -29,17 +29,59 @@ def _do_ranges_overlap(
         True
         >>> _do_ranges_overlap(1, 5, 6, 10)
         False
+
     """
 
     return start1 <= end2 - 1 and start2 <= end1 - 1
 
 
+def _simplify_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Simplify a list of ranges by merging overlapping or contiguous ranges.
+
+    Args:
+        ranges (list of tuples): List of (start, end) tuples representing ranges.
+
+    Returns:
+        list: A simplified list of ranges with no overlaps.
+
+    Examples:
+        >>> _simplify_ranges([])
+        []
+        >>> _simplify_ranges([(1, 5)])
+        [(1, 5)]
+        >>> _simplify_ranges([(1, 5), (5, 10)])
+        [(1, 10)]
+        >>> _simplify_ranges([(1, 5), (4, 6), (8, 10)])
+        [(1, 6), (8, 10)]
+        >>> _simplify_ranges([(1, 3), (5, 7), (2, 6)])
+        [(1, 7)]
+        >>> _simplify_ranges([(1, 2), (3, 4), (5, 6)])
+        [(1, 2), (3, 4), (5, 6)]
+
+    """
+
+    if not ranges:
+        return []
+
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+    simplified = [sorted_ranges[0]]
+
+    for current in sorted_ranges[1:]:
+        last = simplified[-1]
+        if _do_ranges_overlap(last[0], last[1], current[0], current[1]) or last[1] == current[0]:
+            simplified[-1] = (last[0], max(last[1], current[1]))
+        else:
+            simplified.append(current)
+
+    return simplified
+
+
 def find_within_ranges(
-    string,
-    pattern,
-    included_ranges,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    included_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0
 ) -> list[re.Match]:
     """Find all occurrences of a pattern in a string, only within specified ranges.
 
@@ -71,6 +113,7 @@ def find_within_ranges(
 
         >>> find_within_ranges('hello world', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
         [<re.Match object; span=(0, 5), match='hello'>]
+
     """
 
     matches = []
@@ -92,11 +135,11 @@ def find_within_ranges(
 
 
 def find_strings_within_ranges(
-    string,
-    pattern,
-    included_ranges,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    included_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0
 ) -> list[str]:
     """Find all occurrences of a pattern in a string, only within specified ranges.
 
@@ -128,6 +171,7 @@ def find_strings_within_ranges(
 
         >>> find_strings_within_ranges('hello world', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
         ['hello']
+
     """
 
     return [
@@ -142,12 +186,12 @@ def find_strings_within_ranges(
 
 
 def find_with_excluded_ranges(
-    string,
-    pattern,
-    excluded_ranges,
-    count=0,
-    flags=0
-):
+    string: str,
+    pattern: str | re.Pattern,
+    excluded_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0
+) -> list[re.Match]:
     """Find all occurrences of a pattern in a string, excluding specified ranges.
 
     Args:
@@ -162,22 +206,23 @@ def find_with_excluded_ranges(
 
     Examples:
         >>> find_with_excluded_ranges('foo baz foo', r'foo', [(7, 10)])
-        ['foo']
+        [<re.Match object; span=(0, 3), match='foo'>]
 
         >>> find_with_excluded_ranges('abc 123 def 456', r'\\d+', [(4, 7)])
-        ['456']
+        [<re.Match object; span=(12, 15), match='456'>]
 
         >>> find_with_excluded_ranges('hello world', r'\\w+', [(0, 5)])
-        ['world']
+        [<re.Match object; span=(6, 11), match='world'>]
 
         >>> find_with_excluded_ranges('hello world', r'\\w+', [(0, 5), (6, 11)])
         []
 
         >>> find_with_excluded_ranges('foo bar foo', r'\\w+', [(0, 4)], count=1)
-        ['bar']
+        [<re.Match object; span=(4, 7), match='bar'>]
 
         >>> find_with_excluded_ranges('world World WORLD', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
-        ['World', 'WORLD']
+        [<re.Match object; span=(6, 11), match='World'>, <re.Match object; span=(12, 17), match='WORLD'>]
+
     """
 
     matches = []
@@ -196,18 +241,68 @@ def find_with_excluded_ranges(
                 break
 
         if not overlap:
-            matches.append(match.group(0))
+            matches.append(match)
             found += 1
 
     return matches
 
 
+def find_strings_with_excluded_ranges(
+    string: str,
+    pattern: str | re.Pattern,
+    excluded_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0
+) -> list[str]:
+    """Find all occurrences of a pattern in a string, excluding specified ranges.
+
+    Args:
+        string (str): The input string to search.
+        pattern (str): The regex pattern to search for.
+        excluded_ranges (list of tuples): List of (start, end) tuples specifying ranges to exclude from searching.
+        count (int, optional): Maximum number of pattern occurrences to find. Defaults to 0 (find all).
+        flags (int, optional): Regex flags to use. Defaults to 0.
+    Returns:
+        list: A list of all matches found outside the excluded ranges.
+
+    Examples:
+        >>> find_strings_with_excluded_ranges('foo baz foo', r'foo', [(7, 10)])
+        ['foo']
+
+        >>> find_strings_with_excluded_ranges('abc 123 def 456', r'\\d+', [(4, 7)])
+        ['456']
+
+        >>> find_strings_with_excluded_ranges('hello world', r'\\w+', [(0, 5)])
+        ['world']
+
+        >>> find_strings_with_excluded_ranges('hello world', r'\\w+', [(0, 5), (6, 11)])
+        []
+
+        >>> find_strings_with_excluded_ranges('foo bar foo', r'\\w+', [(0, 4)], count=1)
+        ['bar']
+
+        >>> find_strings_with_excluded_ranges('world World WORLD', r'\\w+', [(0, 5)], flags=re.IGNORECASE)
+        ['World', 'WORLD']
+
+    """
+
+    return [
+        match.group(0) for match in find_with_excluded_ranges(
+            string,
+            pattern,
+            excluded_ranges,
+            count,
+            flags
+        )
+    ]
+
+
 def find_within_patterns(
-    string,
-    pattern,
-    included_patterns,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    included_patterns: list[str],
+    count: int = 0,
+    flags: int = 0
 ) -> list[re.Match]:
     """Find all occurrences of a pattern in a string, only within specified patterns.
 
@@ -239,6 +334,7 @@ def find_within_patterns(
 
         >>> find_within_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
         [<re.Match object; span=(0, 9), match='worldwide'>, <re.Match object; span=(0, 9), match='WORLDWIDE'>]
+
     """
 
     matches = []
@@ -257,11 +353,11 @@ def find_within_patterns(
 
 
 def find_strings_within_patterns(
-    string,
-    pattern,
-    included_patterns,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    included_patterns: list[str],
+    count: int = 0,
+    flags: int = 0
 ) -> list[str]:
     """Find all occurrences of a pattern in a string, only within specified patterns.
 
@@ -308,11 +404,11 @@ def find_strings_within_patterns(
 
 
 def find_with_excluded_patterns(
-    string,
-    pattern,
-    excluded_patterns,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    excluded_patterns: list[str],
+    count: int = 0,
+    flags: int = 0
 ):
     """Find all occurrences of a pattern in a string, excluding matches within specified patterns.
 
@@ -344,6 +440,7 @@ def find_with_excluded_patterns(
 
         >>> find_with_excluded_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
         [<re.Match object; span=(0, 5), match='world'>, <re.Match object; span=(16, 21), match='WORLD'>]
+
     """
 
     matches = []
@@ -374,11 +471,11 @@ def find_with_excluded_patterns(
 
 
 def find_strings_with_excluded_patterns(
-    string,
-    pattern,
-    excluded_patterns,
-    count=0,
-    flags=0
+    string: str,
+    pattern: str | re.Pattern,
+    excluded_patterns: list[str],
+    count: int = 0,
+    flags: int = 0
 ):
     """Find all occurrences of a pattern in a string, excluding matches within specified patterns.
 
@@ -410,6 +507,7 @@ def find_strings_with_excluded_patterns(
 
         >>> find_strings_with_excluded_patterns('world worldwide WORLD WORLDWIDE', r'\\w+', [r'worldwide'], flags=re.IGNORECASE)
         ['world', 'WORLD']
+
     """
 
     return [
@@ -424,13 +522,13 @@ def find_strings_with_excluded_patterns(
 
 
 def replace_within_ranges(
-    string,
-    pattern,
-    replacement,
-    included_ranges,
-    count=0,
-    flags=0,
-):
+    string: str,
+    pattern: str | re.Pattern,
+    replacement: str,
+    included_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0,
+) -> str:
     """Replace occurrences of a pattern in a string, only within specified ranges.
 
     Args:
@@ -465,6 +563,7 @@ def replace_within_ranges(
 
         >>> replace_within_ranges('hello world', r'\\w+', 'WORD', [(0, 5)], flags=re.IGNORECASE)
         'WORD world'
+
     """
 
     def replacement_function(match):
@@ -478,13 +577,13 @@ def replace_within_ranges(
 
 
 def replace_with_excluded_ranges(
-    string,
-    pattern,
-    replacement,
-    excluded_ranges,
-    count=0,
-    flags=0,
-):
+    string: str,
+    pattern: str | re.Pattern,
+    replacement: str,
+    excluded_ranges: list[tuple[int, int]],
+    count: int = 0,
+    flags: int = 0,
+) -> str:
     """Replace occurrences of a pattern in a string, excluding specified ranges.
 
     Args:
