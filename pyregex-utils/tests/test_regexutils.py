@@ -5,6 +5,7 @@ from src.regexutils import (
     find_within_ranges,
     find_strings_within_ranges,
     find_with_excluded_ranges,
+    find_strings_with_excluded_ranges,
 )
 
 
@@ -124,3 +125,37 @@ def test_find_strings_within_ranges(text, pattern, ranges, expected_matches):
 def test_find_with_excluded_ranges(text, pattern, excluded_ranges, expected_spans):
     matches = find_with_excluded_ranges(text, pattern, excluded_ranges)
     assert [match.span() for match in matches] == expected_spans
+
+
+@pytest.mark.parametrize(
+    "text, pattern, excluded_ranges, expected_matches",
+    [
+        (
+            "The quick brown fox jumps over the lazy dog",
+            r'\b\w{3}\b',  # Matches 3-letter words
+            [(0, 10), (20, 40)],  # Ranges to exclude
+            ['fox', 'dog']
+        ),
+        (
+            "Hello world, this is a test string",
+            r'\b\w{4}\b',  # Matches 4-letter words
+            [(0, 15), (20, 35)],
+            []
+        ),
+        (
+            "Python is great for programming",
+            r'\b[Pp]\w+\b',  # Matches words starting with P or p
+            [(0, 20)],
+            ['programming']
+        ),
+        (
+            "No matches here",
+            r'\d+',  # Matches digits
+            [(0, 15)],
+            []
+        ),
+    ]
+)
+def test_find_strings_with_excluded_ranges(text, pattern, excluded_ranges, expected_matches):
+    matches = find_strings_with_excluded_ranges(text, pattern, excluded_ranges)
+    assert matches == expected_matches
