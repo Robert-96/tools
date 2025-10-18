@@ -1,3 +1,3 @@
 # tools
 
-Miscellaneous bash, python, HTML+JavaScript tools I have built.
+Miscellaneous Bash, python, HTML+JavaScript tools I have built.
