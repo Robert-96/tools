@@ -60,4 +60,6 @@ jobs:
           python -m pytest -v pyregex-utils/ --doctest-modules --cov-report markdown
 
       - name: Add markdown summary
-        run: cat coverage.md >> $GITHUB_STEP_SUMMARY
+        run: |
+          echo "### Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          cat coverage.md >> $GITHUB_STEP_SUMMARY
