@@ -119,6 +119,8 @@ def find_within_ranges(
     matches = []
     found = 0
 
+    included_ranges = _simplify_ranges(included_ranges)
+
     for match in re.finditer(pattern, string, flags=flags):
         if count and found >= count:
             break
@@ -227,6 +229,8 @@ def find_with_excluded_ranges(
 
     matches = []
     found = 0
+
+    excluded_ranges = _simplify_ranges(excluded_ranges)
 
     for match in re.finditer(pattern, string, flags=flags):
         if count and found >= count:
