@@ -1,0 +1,14 @@
+{
+  "name": "web2pdf",
+  "version": "1.0.0",
+  "description": "A Node.js script that converts web pages to PDF files",
+  "author": "Dezmerean Robert",
+  "type": "commonjs",
+  "main": "src/web2pdf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.27.0"
+  }
+}
