@@ -1,0 +1,4 @@
+// Cluster: help
+// Database: Samples
+nyc_taxi
+| take 100

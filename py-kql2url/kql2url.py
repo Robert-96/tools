@@ -12,10 +12,12 @@ def generate_kusto_query_link(cluster: str, database: str, query: str) -> str:
     encoded_bytes = gzip.compress(query.encode("utf-8"))
     encoded_query = base64.b64encode(encoded_bytes).decode("utf-8")
 
-    return f"https://dataexplorer.azure.com/clusters/{cluster}/{database}?query={encoded_query}"
+    return f"https://dataexplorer.azure.com/clusters/{cluster}/databases/{database}?query={encoded_query}"
 
 
 def cli():
+    """Command-line interface for KQL to URL conversion."""
+
     # Create the argument parser
     parser = argparse.ArgumentParser(
         prog="kql2url",
@@ -63,8 +65,8 @@ def cli():
         if not kql_path.is_file():
             parser.error(f"KQL file path is not a file: {args.kql_file}")
 
-        with open(args.kql_file, "r") as file:
-            query = file.read()
+        with open(args.kql_file, "r") as fp:
+            query = fp.read()
     else:
         query = args.query
 
