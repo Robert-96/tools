@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kql2url"
+authors = [
+  { name="Dezmerean Robert", email="dezmereanrobert@gmail.com" }
+]
+description = "A simple Python utility to convert KQL queries into URLs."
+readme = "README.md"
+requires-python = ">=3.8"
+version = "0.0.1"
+
+[project.scripts]
+kql2url = "kql2url:cli"
+
+[tool.setuptools.packages.find]
+where = ["./"]
+include = ["kql2url"]
