@@ -7,7 +7,13 @@ A simple Python utility to convert KQL queries into URLs.
 You can install the package using pip:
 
 ```bash
-pip install -e .
+python -m pip install -e .
+```
+
+To install from git repository (without cloning the repository), use:
+
+```bash
+python -m pip install -e 'kql2url @ git+https://github.com/Robert-96/tools.git#subdirectory=py-kql2url'
 ```
 
 ## Usage
