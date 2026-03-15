@@ -1,0 +1,5 @@
+vendor_id,pickup_datetime,dropoff_datetime,passenger_count,trip_distance,pickup_longitude,pickup_latitude,rate_code,store_and_fwd_flag,dropoff_longitude,dropoff_latitude,payment_type,fare_amount,surcharge,mta_tax,tip_amount,tolls_amount,total_amount,__status__
+CMT,"12/27/2014, 12:25:32 AM","12/27/2014, 12:33:39 AM",1,1.2,-73.967924,40.755712,1,N,-73.985657,40.757915,CSH,7.5,0.5,0.5,0.0,0.0,8.5,Removed
+VTS,"12/27/2014, 12:25:32 AM","12/27/2014, 12:33:39 AM",1,1.2,-73.967924,40.755712,1,N,-73.985657,40.757915,CSH,7.5,0.5,0.5,0.0,0.0,8.5,Added
+VTS,"7/28/2014, 6:51:00 AM","7/28/2014, 6:59:00 AM",1,2.36,-73.95229,40.78412,1,,-73.973495,40.754727,CRD,9.0,0.0,0.5,2.25,0.0,11.75,Removed
+VTS,"7/28/2014, 6:51:00 AM","7/28/2014, 6:59:00 AM",1,2.36,-73.95229,40.78412,1,,-73.973495,40.754727,CSH,9.0,0.0,0.5,2.25,0.0,11.75,Added
