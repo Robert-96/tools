@@ -1,12 +1,12 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
 
 (async () => {
-    // Launch a headless browser
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+  // Launch a headless browser
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
 
-    // Set the HTML content
-    const htmlContent = `
+  // Set the HTML content
+  const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -19,15 +19,15 @@ const puppeteer = require('puppeteer');
       </html>
     `;
 
-    await page.setContent(htmlContent);
+  await page.setContent(htmlContent);
 
-    // Generate PDF from the HTML content
-    const outputPath = './page.pdf';
-    await page.pdf({
-        path: outputPath,
-    });
+  // Generate PDF from the HTML content
+  const outputPath = "./page.pdf";
+  await page.pdf({
+    path: outputPath,
+  });
 
-    console.log("PDF generated successfully at: " + outputPath);
+  console.log("PDF generated successfully at: " + outputPath);
 
-    await browser.close();
-})()
+  await browser.close();
+})();
