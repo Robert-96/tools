@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -27,7 +27,7 @@ jobs:
           cat .github/super-linter.env >> "$GITHUB_ENV"
 
       - name: Run Super-Linter
-        uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9
+        uses: super-linter/super-linter@v9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,13 +47,13 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
