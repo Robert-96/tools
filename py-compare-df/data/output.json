@@ -1,8 +1,8 @@
 [
   {
     "vendor_id": "CMT",
-    "pickup_datetime": "12\/27\/2014, 12:25:32 AM",
-    "dropoff_datetime": "12\/27\/2014, 12:33:39 AM",
+    "pickup_datetime": "12/27/2014, 12:25:32 AM",
+    "dropoff_datetime": "12/27/2014, 12:33:39 AM",
     "passenger_count": 1,
     "trip_distance": 1.2,
     "pickup_longitude": -73.967924,
@@ -22,8 +22,8 @@
   },
   {
     "vendor_id": "VTS",
-    "pickup_datetime": "12\/27\/2014, 12:25:32 AM",
-    "dropoff_datetime": "12\/27\/2014, 12:33:39 AM",
+    "pickup_datetime": "12/27/2014, 12:25:32 AM",
+    "dropoff_datetime": "12/27/2014, 12:33:39 AM",
     "passenger_count": 1,
     "trip_distance": 1.2,
     "pickup_longitude": -73.967924,
@@ -43,8 +43,8 @@
   },
   {
     "vendor_id": "VTS",
-    "pickup_datetime": "7\/28\/2014, 6:51:00 AM",
-    "dropoff_datetime": "7\/28\/2014, 6:59:00 AM",
+    "pickup_datetime": "7/28/2014, 6:51:00 AM",
+    "dropoff_datetime": "7/28/2014, 6:59:00 AM",
     "passenger_count": 1,
     "trip_distance": 2.36,
     "pickup_longitude": -73.95229,
@@ -64,8 +64,8 @@
   },
   {
     "vendor_id": "VTS",
-    "pickup_datetime": "7\/28\/2014, 6:51:00 AM",
-    "dropoff_datetime": "7\/28\/2014, 6:59:00 AM",
+    "pickup_datetime": "7/28/2014, 6:51:00 AM",
+    "dropoff_datetime": "7/28/2014, 6:59:00 AM",
     "passenger_count": 1,
     "trip_distance": 2.36,
     "pickup_longitude": -73.95229,
