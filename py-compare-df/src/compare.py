@@ -96,7 +96,7 @@ def compare_by_compare(
         A pandas DataFrame containing the differences between src and dst.
     """
 
-    if "on" in kwargs:
+    if kwargs.get("on") is not None:
         warn("The 'on' parameter is not supported when using the compare method.")
 
     diff = src.compare(dst, align_axis=0, keep_shape=keep_all, keep_equal=keep_all)
@@ -259,14 +259,18 @@ importers = {
 
 
 def cli():
-    """Command-line interface for comparing JSON files."""
+    """Command-line interface for comparing data files."""
 
     parser = argparse.ArgumentParser(description="Compare two data files.")
 
     parser.add_argument("file1", help=f"Path to the first data file. Supported formats: [{', '.join(importers.keys())}].")
     parser.add_argument("file2", help=f"Path to the second data file. Supported formats: [{', '.join(importers.keys())}].")
-    parser.add_argument("--on", metavar='COLUMN', type=str, nargs="+", help="List of columns to join on. If not provided, defaults to the intersection of columns.", required=False, default=None)
-    parser.add_argument("--keep-all", action="store_true", help="Include rows with matching merge keys.")
+    parser.add_argument("--method", choices=commands, default="merge", help="Comparison method to use (default: merge).")
+    parser.add_argument(
+        "--on", metavar="COLUMN", nargs="+",
+        help="Merge keys or left join columns; not supported by compare.",
+    )
+    parser.add_argument("--keep-all", action="store_true", help="Include rows or values normally omitted.")
     parser.add_argument("--output", help=f"Path to the output file. Supported formats: [{', '.join(exporters.keys())}].", required=False)
     parser.add_argument("--debug", action="store_true", help="Enable debug mode.", required=False, default=False)
 
@@ -280,7 +284,7 @@ def cli():
 
     debug = args.debug
 
-    diff = compare(df1, df2, on=args.on, keep_all=args.keep_all)
+    diff = compare(df1, df2, method=args.method, on=args.on, keep_all=args.keep_all)
 
     if debug:
         print(diff)
