@@ -11,6 +11,10 @@ def compare_by_merge(
 
     Rows that are present in one DataFrame but not the other are marked as 'Added' or 'Removed'.
 
+    The combined join keys should be unique within each DataFrame. Uniqueness
+    is not enforced; duplicate keys can create multiple matches and hide
+    differences in row counts. With on=None, all shared columns form the key.
+
     Args:
         src: The first pandas DataFrame.
         dst: The second pandas DataFrame.
@@ -94,6 +98,10 @@ def compare(
     on: list | None = None, keep_all: bool = False
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames and return the differences using the specified method.
+
+    Ensure the matching keys or index labels uniquely identify rows in each
+    DataFrame. Uniqueness is not enforced; duplicates can lead to ambiguous
+    comparisons. The matching rules depend on the selected method.
 
     Args:
         src: The first pandas DataFrame.
