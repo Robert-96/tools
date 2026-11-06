@@ -42,13 +42,16 @@ def compare_by_join(
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames using a join operation and return the differences.
 
-    Rows that are present in one DataFrame but not the other are marked as 'Added' or 'Removed'.
+    Rows classified as present on both sides are marked 'Changed' when shared
+    columns differ, or 'Unchanged' otherwise. Two null values compare equal.
+    Added and removed statuses use a null/suffix heuristic that can misclassify
+    null-only rows or rows with disjoint columns.
 
     Args:
         src: The first pandas DataFrame.
         dst: The second pandas DataFrame.
         on: Left-side columns to join against the right index. If None, join on indexes.
-        keep_all: Retain rows classified as 'Unchanged'. This status does not compare values.
+        keep_all: Retain rows classified as 'Unchanged' as well as differences.
 
     Returns:
         A pandas DataFrame containing the differences between src and dst.
@@ -60,6 +63,20 @@ def compare_by_join(
         lambda row: "Added" if pd.isna(row.filter(like="_src")).all() else ("Removed" if pd.isna(row.filter(like="_dst")).all() else "Unchanged"),
         axis=1,
     )
+    for column in src.columns.intersection(dst.columns, sort=False):
+        if isinstance(src.columns, pd.MultiIndex):
+            src_column = (f"{column[0]}_src", *column[1:])
+            dst_column = (f"{column[0]}_dst", *column[1:])
+        else:
+            src_column = f"{column}_src"
+            dst_column = f"{column}_dst"
+        left = diff[src_column]
+        right = diff[dst_column]
+        if isinstance(left.dtype, pd.CategoricalDtype) or isinstance(right.dtype, pd.CategoricalDtype):
+            left = left.astype(object)
+            right = right.astype(object)
+        equal = left.eq(right).fillna(False) | (left.isna() & right.isna())
+        diff.loc[(diff["__status__"] == "Unchanged") & ~equal, "__status__"] = "Changed"
     if not keep_all:
         diff = diff.loc[diff["__status__"] != "Unchanged"]
     return diff
