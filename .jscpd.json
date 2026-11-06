@@ -1,0 +1,16 @@
+{
+  "absolute": true,
+  "ignore": [
+    "**/.git/**",
+    "**/.pytest_cache/**",
+    "**/__pycache__/**",
+    "**/htmlcov/**",
+    "**/node_modules/**",
+    "**/*.egg-info/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/fixtures/**"
+  ],
+  "reporters": ["consoleFull"],
+  "threshold": 5
+}
