@@ -19,3 +19,6 @@ package-dir = { py_compare_df = "src" }
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
+
+[tool.coverage.run]
+patch = ["subprocess"]
