@@ -61,6 +61,25 @@ def test_cli_json_inputs_and_output(tmp_path):
     assert {row["id"]: row["__status__"] for row in rows} == {2: "Removed", 3: "Added"}
 
 
+@pytest.mark.parametrize("extension", ["xlsx", "md"])
+def test_cli_excel_and_markdown_output(tmp_path, extension):
+    src = tmp_path / "source.csv"
+    dst = tmp_path / "destination.csv"
+    output = tmp_path / f"result.{extension}"
+    src.write_text("id\n1\n", encoding="utf-8")
+    dst.write_text("id\n2\n", encoding="utf-8")
+
+    result = run_cli(src, dst, "--output", output)
+    assert result.returncode == 0, result.stderr
+    if extension == "xlsx":
+        rows = pd.read_excel(output)
+        assert dict(zip(rows["id"], rows["__status__"])) == {1: "Removed", 2: "Added"}
+    else:
+        content = output.read_text(encoding="utf-8")
+        assert "id" in content and "__status__" in content
+        assert "Removed" in content and "Added" in content
+
+
 def test_cli_debug_prints_differences(tmp_path):
     src = tmp_path / "source.csv"
     dst = tmp_path / "destination.csv"

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Compare pandas DataFrames and export their differences."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["pandas"]
+dynamic = ["dependencies"]
 
 [project.scripts]
 py-compare-df = "py_compare_df.compare:cli"
@@ -16,3 +16,6 @@ py-compare-df = "py_compare_df.compare:cli"
 [tool.setuptools]
 packages = ["py_compare_df"]
 package-dir = { py_compare_df = "src" }
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
