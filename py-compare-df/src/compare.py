@@ -1,6 +1,9 @@
+"""Compare pandas DataFrames and export their differences."""
+
 import argparse
 from pathlib import Path
 from warnings import warn
+
 import pandas as pd
 
 
@@ -50,7 +53,7 @@ def compare_by_join(
     Args:
         src: The first pandas DataFrame.
         dst: The second pandas DataFrame.
-        on: Left-side columns to join against the right index. If None, join on indexes.
+        on: Columns in both DataFrames to join on. If None, join on indexes.
         keep_all: Retain rows classified as 'Unchanged' as well as differences.
 
     Returns:
@@ -58,7 +61,11 @@ def compare_by_join(
 
     """
 
-    diff = src.join(dst, how="outer", lsuffix="_src", rsuffix="_dst", on=on, sort=False)
+    if on is not None:
+        src = src.set_index(on)
+        dst = dst.set_index(on)
+
+    diff = src.join(dst, how="outer", lsuffix="_src", rsuffix="_dst", sort=False)
     diff["__status__"] = diff.apply(
         lambda row: "Added" if pd.isna(row.filter(like="_src")).all() else ("Removed" if pd.isna(row.filter(like="_dst")).all() else "Unchanged"),
         axis=1,
@@ -79,6 +86,8 @@ def compare_by_join(
         diff.loc[(diff["__status__"] == "Unchanged") & ~equal, "__status__"] = "Changed"
     if not keep_all:
         diff = diff.loc[diff["__status__"] != "Unchanged"]
+    if on is not None:
+        diff = diff.reset_index()
     return diff
 
 
@@ -94,6 +103,7 @@ def compare_by_compare(
 
     Returns:
         A pandas DataFrame containing the differences between src and dst.
+
     """
 
     if kwargs.get("on") is not None:
@@ -124,7 +134,7 @@ def compare(
         src: The first pandas DataFrame.
         dst: The second pandas DataFrame.
         method: The comparison method to use. Options are 'merge', 'join', or 'compare'.
-        on: Merge keys or left join columns; not supported by the compare method.
+        on: Merge or join key columns; not supported by the compare method.
         keep_all: Retain rows or equal values normally omitted by the selected method.
 
     Returns:
@@ -149,6 +159,7 @@ def export_json(df: pd.DataFrame, filepath: str | Path) -> None:
 
     Returns:
         None
+
     """
 
     df.to_json(filepath, orient="records")
@@ -268,7 +279,7 @@ def cli():
     parser.add_argument("--method", choices=commands, default="merge", help="Comparison method to use (default: merge).")
     parser.add_argument(
         "--on", metavar="COLUMN", nargs="+",
-        help="Merge keys or left join columns; not supported by compare.",
+        help="Merge or join key columns; not supported by compare.",
     )
     parser.add_argument("--keep-all", action="store_true", help="Include rows or values normally omitted.")
     parser.add_argument("--output", help=f"Path to the output file. Supported formats: [{', '.join(exporters.keys())}].", required=False)
