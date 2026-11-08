@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from src.compare import compare, compare_by_join
 
@@ -62,12 +63,59 @@ def test_join_handles_empty_inputs_and_multilevel_columns():
     assert compare_by_join(src, dst, keep_all=True)["__status__"].iloc[0] == "Changed"
 
 
-def test_join_on_matches_left_column_against_right_index():
-    src = pd.DataFrame({"id": [10], "value": ["old"]})
-    dst = pd.DataFrame({"value": ["new"]}, index=[10])
-    result = compare(src, dst, method="join", on=["id"])
-    assert result["__status__"].tolist() == ["Changed"]
-    assert result[["value_src", "value_dst"]].iloc[0].tolist() == ["old", "new"]
+@pytest.mark.parametrize("keep_all", [False, True])
+def test_join_on_matches_columns_without_mutating_inputs(keep_all):
+    src = pd.DataFrame({"id": [1, 2, 3], "value": ["old", "same", "removed"]}, index=[8, 9, 10])
+    dst = pd.DataFrame({"id": [1, 2, 4], "value": ["new", "same", "added"]}, index=[11, 12, 13])
+    src_original = src.copy(deep=True)
+    dst_original = dst.copy(deep=True)
+
+    result = compare(src, dst, method="join", on=["id"], keep_all=keep_all)
+
+    assert result.columns.tolist() == ["id", "value_src", "value_dst", "__status__"]
+    rows = result.set_index("id")
+    assert rows["__status__"].to_dict() == (
+        {1: "Changed", 2: "Unchanged", 3: "Removed", 4: "Added"}
+        if keep_all else {1: "Changed", 3: "Removed", 4: "Added"}
+    )
+    assert rows.loc[1, ["value_src", "value_dst"]].tolist() == ["old", "new"]
+    pd.testing.assert_frame_equal(src, src_original)
+    pd.testing.assert_frame_equal(dst, dst_original)
+
+
+def test_join_on_composite_keys_and_duplicate_matches():
+    src = pd.DataFrame({"id": [1, 1, 2], "date": ["a", "a", "b"], "value": ["old", "same", "removed"]})
+    dst = pd.DataFrame({"id": [1, 1, 3], "date": ["a", "a", "c"], "value": ["new", "same", "added"]})
+    result = compare_by_join(src, dst, on=["id", "date"], keep_all=True)
+
+    assert result.columns.tolist() == ["id", "date", "value_src", "value_dst", "__status__"]
+    assert sorted(result.loc[result["id"] == 1, "__status__"]) == ["Changed", "Changed", "Changed", "Unchanged"]
+    assert result.loc[result["id"] == 2, "__status__"].item() == "Removed"
+    assert result.loc[result["id"] == 3, "__status__"].item() == "Added"
+    assert result.loc[result["id"] == 2, "date"].item() == "b"
+    assert result.loc[result["id"] == 3, "date"].item() == "c"
+
+
+@pytest.mark.parametrize("missing_side", ["src", "dst"])
+def test_join_on_requires_keys_in_both_inputs(missing_side):
+    with_key = pd.DataFrame({"id": [1], "value": ["x"]})
+    without_key = pd.DataFrame({"value": ["x"]}, index=pd.Index([1], name="id"))
+    src, dst = (without_key, with_key) if missing_side == "src" else (with_key, without_key)
+    with pytest.raises(KeyError, match="id"):
+        compare_by_join(src, dst, on=["id"])
+
+
+def test_join_on_empty_inputs_retains_key_column():
+    empty = pd.DataFrame({"id": pd.Series(dtype="int64"), "value": pd.Series(dtype="object")})
+    result = compare_by_join(empty, empty, on=["id"], keep_all=True)
+    assert result.empty
+    assert result.columns.tolist() == ["id", "value_src", "value_dst", "__status__"]
+
+
+def test_join_on_key_only_preserves_existing_presence_heuristic():
+    frame = pd.DataFrame({"id": [1]})
+    result = compare_by_join(frame, frame, on=["id"], keep_all=True)
+    assert result.to_dict("records") == [{"id": 1, "__status__": "Added"}]
 
 
 def test_join_preserves_existing_null_and_disjoint_column_classification():
@@ -87,10 +135,3 @@ def test_join_duplicate_indexes_produce_all_combinations():
         ("b", "a", "Changed"), ("b", "c", "Changed"),
     ]
     assert len(compare_by_join(src, dst)) == 3
-
-
-def test_join_on_does_not_match_right_column():
-    src = pd.DataFrame({"id": [10], "value": ["old"]})
-    dst = pd.DataFrame({"id": [10], "value": ["new"]})
-    result = compare_by_join(src, dst, on=["id"], keep_all=True)
-    assert sorted(result["__status__"].tolist()) == ["Added", "Removed"]

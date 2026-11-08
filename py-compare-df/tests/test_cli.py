@@ -37,6 +37,28 @@ def test_cli_export_preserves_default_and_opt_in(tmp_path, keep_all):
         assert result.loc[1, ["value_x", "value_y"]].tolist() == ["old", "new"]
 
 
+@pytest.mark.parametrize("keep_all", [False, True])
+def test_cli_join_composite_keys_are_exported(tmp_path, keep_all):
+    src = tmp_path / "source.csv"
+    dst = tmp_path / "destination.csv"
+    output = tmp_path / "result.csv"
+    src.write_text("id,date,value\n1,a,old\n2,b,same\n3,c,removed\n", encoding="utf-8")
+    dst.write_text("id,date,value\n1,a,new\n2,b,same\n4,d,added\n", encoding="utf-8")
+    args = [src, dst, "--method", "join", "--on", "id", "date", "--output", output]
+    if keep_all:
+        args.append("--keep-all")
+
+    result = run_cli(*args)
+
+    assert result.returncode == 0, result.stderr
+    rows = pd.read_csv(output).set_index(["id", "date"])
+    assert rows["__status__"].to_dict() == (
+        {(1, "a"): "Changed", (2, "b"): "Unchanged", (3, "c"): "Removed", (4, "d"): "Added"}
+        if keep_all else {(1, "a"): "Changed", (3, "c"): "Removed", (4, "d"): "Added"}
+    )
+    assert rows.loc[(1, "a"), ["value_src", "value_dst"]].tolist() == ["old", "new"]
+
+
 def test_cli_help():
     result = run_cli("--help")
     assert result.returncode == 0
