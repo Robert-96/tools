@@ -14,8 +14,8 @@ def test_merge_keeps_matched_and_unmatched_rows_only_when_requested():
     assert dict(zip(default["id"], default["__status__"])) == {3: "Removed", 4: "Added"}
 
     result = compare(src, dst, on=["id"], keep_all=True).set_index("id")
-    assert result.loc[1, ["value_x", "value_y", "__status__"]].tolist() == ["old", "new", "Both"]
-    assert result.loc[2, ["value_x", "value_y", "__status__"]].tolist() == ["same", "same", "Both"]
+    assert result.loc[1, ["value_old", "value_new", "__status__"]].tolist() == ["old", "new", "Both"]
+    assert result.loc[2, ["value_old", "value_new", "__status__"]].tolist() == ["same", "same", "Both"]
     assert result.loc[3, "__status__"] == "Removed"
     assert result.loc[4, "__status__"] == "Added"
 
@@ -36,7 +36,7 @@ def test_merge_keeps_duplicate_key_combinations():
     dst = pd.DataFrame({"id": [1, 1], "value": ["c", "d"]})
 
     result = compare_by_merge(src, dst, on=["id"], keep_all=True)
-    assert set(zip(result["value_x"], result["value_y"])) == {
+    assert set(zip(result["value_old"], result["value_new"])) == {
         ("a", "c"), ("a", "d"), ("b", "c"), ("b", "d")
     }
     assert result["__status__"].tolist() == ["Both"] * 4

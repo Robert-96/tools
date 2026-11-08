@@ -32,9 +32,10 @@ def test_cli_export_preserves_default_and_opt_in(tmp_path, keep_all):
         command.append("--keep-all")
     subprocess.run(command, cwd=PROJECT_DIR, check=True, capture_output=True, text=True)
     result = pd.read_csv(output).set_index("id")
+    assert result.columns.tolist() == ["value_old", "value_new", "__status__"]
     assert set(result["__status__"]) == ({"Both", "Added", "Removed"} if keep_all else {"Added", "Removed"})
     if keep_all:
-        assert result.loc[1, ["value_x", "value_y"]].tolist() == ["old", "new"]
+        assert result.loc[1, ["value_old", "value_new"]].tolist() == ["old", "new"]
 
 
 @pytest.mark.parametrize("keep_all", [False, True])
@@ -56,7 +57,7 @@ def test_cli_join_composite_keys_are_exported(tmp_path, keep_all):
         {(1, "a"): "Changed", (2, "b"): "Unchanged", (3, "c"): "Removed", (4, "d"): "Added"}
         if keep_all else {(1, "a"): "Changed", (3, "c"): "Removed", (4, "d"): "Added"}
     )
-    assert rows.loc[(1, "a"), ["value_src", "value_dst"]].tolist() == ["old", "new"]
+    assert rows.loc[(1, "a"), ["value_old", "value_new"]].tolist() == ["old", "new"]
 
 
 def test_cli_help():
@@ -167,7 +168,7 @@ def test_cli_routes_each_comparison_method(tmp_path, command):
     if command == "merge":
         assert {row["value"]: row["__status__"] for row in rows} == {"old": "Removed", "new": "Added"}
     elif command == "join":
-        assert rows == [{"value_src": "old", "value_dst": "new", "__status__": "Changed"}]
+        assert rows == [{"value_old": "old", "value_new": "new", "__status__": "Changed"}]
     else:
         assert rows == [{"value": "old"}, {"value": "new"}]
         assert result.stderr == ""

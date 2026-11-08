@@ -35,7 +35,7 @@ to print them; without either, the command produces no output. Run
 ```python
 from py_compare_df import compare
 
-result = compare(df1, df2, on=["id"], keep_all=True)
+result = compare(old=df1, new=df2, on=["id"], keep_all=True)
 ```
 
 ### Notes

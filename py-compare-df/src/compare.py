@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def compare_by_merge(
-    src: pd.DataFrame, dst: pd.DataFrame, on: list | None = None, keep_all: bool = False
+    old: pd.DataFrame, new: pd.DataFrame, on: list | None = None, keep_all: bool = False
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames and return the differences.
 
@@ -19,17 +19,17 @@ def compare_by_merge(
     differences in row counts. With on=None, all shared columns form the key.
 
     Args:
-        src: The first pandas DataFrame.
-        dst: The second pandas DataFrame.
+        old: The original pandas DataFrame.
+        new: The updated pandas DataFrame.
         on: List of columns to join on. If None, defaults to the intersection of columns.
         keep_all: Retain matched rows as 'Both', even if their other values differ.
 
     Returns:
-        A pandas DataFrame containing the differences between src and dst.
+        A pandas DataFrame containing the differences between old and new.
 
     """
 
-    diff = pd.merge(src, dst, how="outer", indicator="__status__", on=on)
+    diff = pd.merge(old, new, how="outer", indicator="__status__", on=on, suffixes=("_old", "_new"))
     statuses = {"left_only": "Removed", "right_only": "Added"}
     if keep_all:
         statuses["both"] = "Both"
@@ -41,7 +41,7 @@ def compare_by_merge(
 
 
 def compare_by_join(
-    src: pd.DataFrame, dst: pd.DataFrame, on: list | None = None, keep_all: bool = False
+    old: pd.DataFrame, new: pd.DataFrame, on: list | None = None, keep_all: bool = False
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames using a join operation and return the differences.
 
@@ -51,38 +51,41 @@ def compare_by_join(
     null-only rows or rows with disjoint columns.
 
     Args:
-        src: The first pandas DataFrame.
-        dst: The second pandas DataFrame.
+        old: The original pandas DataFrame.
+        new: The updated pandas DataFrame.
         on: Columns in both DataFrames to join on. If None, join on indexes.
         keep_all: Retain rows classified as 'Unchanged' as well as differences.
 
     Returns:
-        A pandas DataFrame containing the differences between src and dst.
+        A pandas DataFrame containing the differences between old and new.
 
     """
 
     if on is not None:
-        src = src.set_index(on)
-        dst = dst.set_index(on)
+        old = old.set_index(on)
+        new = new.set_index(on)
 
-    diff = src.join(dst, how="outer", lsuffix="_src", rsuffix="_dst", sort=False)
+    diff = old.join(new, how="outer", lsuffix="_old", rsuffix="_new", sort=False)
+    column_labels = diff.columns.get_level_values(0) if isinstance(diff.columns, pd.MultiIndex) else diff.columns
+    old_columns = diff.columns[[str(column).endswith("_old") for column in column_labels]]
+    new_columns = diff.columns[[str(column).endswith("_new") for column in column_labels]]
     diff["__status__"] = diff.apply(
-        lambda row: "Added" if pd.isna(row.filter(like="_src")).all() else ("Removed" if pd.isna(row.filter(like="_dst")).all() else "Unchanged"),
+        lambda row: "Added" if pd.isna(row[old_columns]).all() else ("Removed" if pd.isna(row[new_columns]).all() else "Unchanged"),
         axis=1,
     )
-    for column in src.columns.intersection(dst.columns, sort=False):
-        if isinstance(src.columns, pd.MultiIndex):
-            src_column = (f"{column[0]}_src", *column[1:])
-            dst_column = (f"{column[0]}_dst", *column[1:])
+    for column in old.columns.intersection(new.columns, sort=False):
+        if isinstance(old.columns, pd.MultiIndex):
+            old_column = (f"{column[0]}_old", *column[1:])
+            new_column = (f"{column[0]}_new", *column[1:])
         else:
-            src_column = f"{column}_src"
-            dst_column = f"{column}_dst"
-        left = diff[src_column]
-        right = diff[dst_column]
-        if isinstance(left.dtype, pd.CategoricalDtype) or isinstance(right.dtype, pd.CategoricalDtype):
-            left = left.astype(object)
-            right = right.astype(object)
-        equal = left.eq(right).fillna(False) | (left.isna() & right.isna())
+            old_column = f"{column}_old"
+            new_column = f"{column}_new"
+        old_values = diff[old_column]
+        new_values = diff[new_column]
+        if isinstance(old_values.dtype, pd.CategoricalDtype) or isinstance(new_values.dtype, pd.CategoricalDtype):
+            old_values = old_values.astype(object)
+            new_values = new_values.astype(object)
+        equal = old_values.eq(new_values).fillna(False) | (old_values.isna() & new_values.isna())
         diff.loc[(diff["__status__"] == "Unchanged") & ~equal, "__status__"] = "Changed"
     if not keep_all:
         diff = diff.loc[diff["__status__"] != "Unchanged"]
@@ -92,24 +95,24 @@ def compare_by_join(
 
 
 def compare_by_compare(
-    src: pd.DataFrame, dst: pd.DataFrame, keep_all: bool = False, **kwargs
+    old: pd.DataFrame, new: pd.DataFrame, keep_all: bool = False, **kwargs
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames using the built-in compare method and return the differences.
 
     Args:
-        src: The first pandas DataFrame.
-        dst: The second pandas DataFrame.
+        old: The original pandas DataFrame.
+        new: The updated pandas DataFrame.
         keep_all: Retain all rows, columns, and equal values.
 
     Returns:
-        A pandas DataFrame containing the differences between src and dst.
+        A pandas DataFrame containing the differences between old and new.
 
     """
 
     if kwargs.get("on") is not None:
         warn("The 'on' parameter is not supported when using the compare method.")
 
-    diff = src.compare(dst, align_axis=0, keep_shape=keep_all, keep_equal=keep_all)
+    diff = old.compare(new, align_axis=0, keep_shape=keep_all, keep_equal=keep_all)
     return diff
 
 
@@ -121,7 +124,7 @@ commands = {
 
 
 def compare(
-    src: pd.DataFrame, dst: pd.DataFrame, method: str = "merge",
+    old: pd.DataFrame, new: pd.DataFrame, method: str = "merge",
     on: list | None = None, keep_all: bool = False
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames and return the differences using the specified method.
@@ -131,14 +134,14 @@ def compare(
     comparisons. The matching rules depend on the selected method.
 
     Args:
-        src: The first pandas DataFrame.
-        dst: The second pandas DataFrame.
+        old: The original pandas DataFrame.
+        new: The updated pandas DataFrame.
         method: The comparison method to use. Options are 'merge', 'join', or 'compare'.
         on: Merge or join key columns; not supported by the compare method.
         keep_all: Retain rows or equal values normally omitted by the selected method.
 
     Returns:
-        A pandas DataFrame containing the differences between src and dst.
+        A pandas DataFrame containing the differences between old and new.
 
     """
 
@@ -147,7 +150,7 @@ def compare(
     if not comparator:
         raise ValueError(f"Unsupported comparison method: {method}. Supported methods are: {', '.join(commands.keys())}.")
 
-    return comparator(src, dst, on=on, keep_all=keep_all)
+    return comparator(old, new, on=on, keep_all=keep_all)
 
 
 def export_json(df: pd.DataFrame, filepath: str | Path) -> None:
