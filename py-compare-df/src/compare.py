@@ -95,7 +95,7 @@ def compare_by_join(
 
 
 def compare_by_compare(
-    old: pd.DataFrame, new: pd.DataFrame, keep_all: bool = False, **kwargs
+    old: pd.DataFrame, new: pd.DataFrame, keep_all: bool = False, on: list | None = None, **kwargs
 ) -> pd.DataFrame:
     """Compare two pandas DataFrames using the built-in compare method and return the differences.
 
@@ -109,10 +109,11 @@ def compare_by_compare(
 
     """
 
-    if kwargs.get("on") is not None:
-        warn("The 'on' parameter is not supported when using the compare method.")
+    if on is not None:
+        old = old.set_index(on)
+        new = new.set_index(on)
 
-    diff = old.compare(new, align_axis=0, keep_shape=keep_all, keep_equal=keep_all)
+    diff = old.compare(new, align_axis=0, keep_shape=keep_all, keep_equal=keep_all, result_names=("old", "new"))
     return diff
 
 
@@ -137,7 +138,8 @@ def compare(
         old: The original pandas DataFrame.
         new: The updated pandas DataFrame.
         method: The comparison method to use. Options are 'merge', 'join', or 'compare'.
-        on: Merge or join key columns; not supported by the compare method.
+        on: Key columns for merge or join, or columns to use as indexes for
+            compare. If None, each method uses its default matching.
         keep_all: Retain rows or equal values normally omitted by the selected method.
 
     Returns:
