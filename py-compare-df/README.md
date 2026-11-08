@@ -43,8 +43,8 @@ result = compare(df1, df2, on=["id"], keep_all=True)
 - Keys should uniquely identify rows; duplicate keys can create multiple matches.
 - `merge` matches shared columns by default. `--keep-all` retains matching
   keys as `Both`, even if other values differ.
-- `join` uses indexes by default; `--on` matches left columns to the right
-  index. Its presence heuristic can misclassify null-only or disjoint-column
-  rows.
+- `join` uses indexes by default; `--on` matches columns in both inputs and
+  includes the keys in the output. Its presence heuristic can misclassify
+  key-only rows, null-only values, or disjoint non-key columns.
 - `compare` requires identical index and column labels and does not support
   `--on`. Exporters omit its row labels; use `--debug` to inspect them.
