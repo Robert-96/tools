@@ -1,0 +1,4 @@
+# Ignore output files
+output/*.diff
+output/*.html
+output/*.md
