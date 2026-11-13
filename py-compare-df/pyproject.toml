@@ -12,10 +12,14 @@ dynamic = ["dependencies"]
 
 [project.scripts]
 py-compare-df = "py_compare_df.compare:cli"
+py-compare-df-diff = "py_compare_df.diff:cli"
 
 [tool.setuptools]
 packages = ["py_compare_df"]
 package-dir = { py_compare_df = "src" }
+
+[tool.setuptools.package-data]
+py_compare_df = ["templates/*.html"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }

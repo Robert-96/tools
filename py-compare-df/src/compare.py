@@ -6,6 +6,8 @@ from warnings import warn
 
 import pandas as pd
 
+from .utils import export_df, exporters, import_df, importers
+
 
 def compare_by_merge(
     old: pd.DataFrame, new: pd.DataFrame, on: list | None = None, keep_all: bool = False
@@ -155,124 +157,6 @@ def compare(
     return comparator(old, new, on=on, keep_all=keep_all)
 
 
-def export_json(df: pd.DataFrame, filepath: str | Path) -> None:
-    """Exports the given pandas DataFrame to a JSON file at the specified filepath.
-
-    Args:
-        df: The pandas DataFrame to export.
-        filepath: The path where the JSON file will be saved.
-
-    Returns:
-        None
-
-    """
-
-    df.to_json(filepath, orient="records")
-
-
-def export_csv(df: pd.DataFrame, filepath: str | Path) -> None:
-    """Exports the given pandas DataFrame to a CSV file at the specified filepath.
-
-    Args:
-        df: The pandas DataFrame to export.
-        filepath: The path where the CSV file will be saved.
-
-    Returns:
-        None
-
-    """
-
-    df.to_csv(filepath, index=False)
-
-
-def export_excel(df: pd.DataFrame, filepath: str | Path) -> None:
-    """Exports the given pandas DataFrame to an Excel file at the specified filepath.
-
-    Args:
-        df: The pandas DataFrame to export.
-        filepath: The path where the Excel file will be saved.
-
-    Returns:
-        None
-
-    """
-
-    df.to_excel(filepath, index=False)
-
-
-def export_html(df: pd.DataFrame, filepath: str | Path) -> None:
-    """Exports the given pandas DataFrame to an HTML file at the specified filepath.
-
-    Args:
-        df: The pandas DataFrame to export.
-        filepath: The path where the HTML file will be saved.
-
-    Returns:
-        None
-
-    """
-
-    df.to_html(filepath, index=False)
-
-
-def export_markdown(df: pd.DataFrame, filepath: str | Path) -> None:
-    """Exports the given pandas DataFrame to a Markdown file at the specified filepath.
-
-    Args:
-        df: The pandas DataFrame to export.
-        filepath: The path where the Markdown file will be saved.
-
-    Returns:
-        None
-
-    """
-
-    with open(filepath, "w") as f:
-        f.write(df.to_markdown(index=False, tablefmt="github"))
-
-
-exporters = {
-    "json": export_json,
-    "csv": export_csv,
-    "xlsx": export_excel,
-    "html": export_html,
-    "md": export_markdown,
-}
-
-
-def import_json(filepath: str | Path) -> pd.DataFrame:
-    """Imports a JSON file and returns it as a pandas DataFrame.
-
-    Args:
-        filepath: The path to the JSON file.
-
-    Returns:
-        A pandas DataFrame containing the data from the JSON file.
-
-    """
-
-    return pd.read_json(filepath)
-
-
-def import_csv(filepath: str | Path) -> pd.DataFrame:
-    """Imports a CSV file and returns it as a pandas DataFrame.
-
-    Args:
-        filepath: The path to the CSV file.
-
-    Returns:
-        A pandas DataFrame containing the data from the CSV file.
-
-    """
-
-    return pd.read_csv(filepath)
-
-
-importers = {
-    "json": import_json,
-    "csv": import_csv,
-}
-
 
 def cli():
     """Command-line interface for comparing data files."""
@@ -292,27 +176,17 @@ def cli():
 
     args = parser.parse_args()
 
-    data_file1 = Path(args.file1)
-    data_file2 = Path(args.file2)
-
-    df1 = importers.get(data_file1.suffix.lstrip(".").lower(), pd.read_json)(args.file1)
-    df2 = importers.get(data_file2.suffix.lstrip(".").lower(), pd.read_json)(args.file2)
-
-    debug = args.debug
+    df1 = import_df(args.file1)
+    df2 = import_df(args.file2)
 
     diff = compare(df1, df2, method=args.method, on=args.on, keep_all=args.keep_all)
 
+    debug = args.debug
     if debug:
         print(diff)
 
     if args.output:
-        exporter = exporters.get(Path(args.output).suffix.lstrip(".").lower())
-
-        if exporter:
-            exporter(diff, args.output)
-            print(f"Differences exported to: '{args.output}'")
-        else:
-            parser.error(f"Unsupported output format: {Path(args.output).suffix.lstrip('.').lower()}")
+        export_df(diff, args.output)
 
 
 if __name__ == "__main__":
