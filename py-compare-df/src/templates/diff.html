@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DataFrame diff</title>
+    <style>
+      body {
+        font: 16px system-ui, sans-serif;
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        color: #17212b;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 1rem;
+      }
+
+      th, td {
+        border: 1px solid #cbd5e1;
+        padding: .55rem;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      th {
+        background: #e8eef5;
+      }
+
+      .Added {
+        background: #e4f7ea;
+      }
+
+      .Removed {
+        background: #fde8e8;
+      }
+
+      .Changed {
+        background: #fff4d6;
+      }
+
+      .Unchanged {
+        background: #f1f5f9;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      .changed-cell {
+        background: #ffe599;
+        font-weight: 600;
+        outline: 2px solid #8a5700;
+        outline-offset: -2px;
+      }
+
+      .change-marker {
+        margin-left: .25em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DataFrame diff</h1>
+    <p>Join statuses use a null/suffix heuristic; see the documentation for limitations.</p>
+    <h2>Changed fields</h2>
+    {% set has_changes = rows | selectattr("changed_fields") | list | length > 0 %}
+    {% if has_changes %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Row</th>
+            <th>Status</th>
+            <th>Column</th>
+            <th>Old</th>
+            <th>New</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          {% set changed = row.changed_fields %}
+          {% for field, old_value, new_value in row.values if field in changed %}
+          <tr class="{{ row.status }}">
+            <td>{{ row.identity }}</td>
+            <td>{{ row.status }}</td>
+            <td>{{ field }}</td>
+            <td>{{ old_value }}</td>
+            <td>{{ new_value }}</td>
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>No differing fields to display.</p>
+    {% endif %}
+    <h2>All fields</h2>
+    {% if rows %}
+    <p>Highlighted cells marked with * differ between the old and new records.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Row</th>
+            <th scope="col">Status</th>
+            <th scope="col">Side</th>
+            {% for field in rows[0].fields %}
+            <th scope="col">{{ field }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          {% set values = row.values %}
+          {% set changed = row.changed_fields %}
+          <tr>
+            <th scope="row">{{ row.identity }}</th>
+            <td>{{ row.status }}</td>
+            <td>Old</td>
+            {% for field, old_value, new_value in values %}
+            <td{% if field in changed %} class="changed-cell"{% endif %}>{{ old_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <th scope="row">{{ row.identity }}</th>
+            <td>{{ row.status }}</td>
+            <td>New</td>
+            {% for field, old_value, new_value in values %}
+            <td{% if field in changed %} class="changed-cell"{% endif %}>{{ new_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>No comparison rows to display.</p>
+    {% endif %}
+  </body>
+</html>
