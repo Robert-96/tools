@@ -147,8 +147,12 @@
       .Removed { background: #fff2f1; }
       .Changed { background: #fffaeb; }
       .Unchanged { background: #f5f7fa; }
-      .changed-cell { background: #fff1bd; font-weight: 650; box-shadow: inset 3px 0 #9c6500; }
-      .change-marker { margin-left: .25em; color: #754900; }
+      .changed-cell { background: var(--highlight); font-weight: 650; box-shadow: inset 3px 0 var(--highlight-edge); }
+      .change-marker { margin-left: .25em; color: var(--highlight-marker); }
+      .status-Added { --highlight: #d7f0dd; --highlight-edge: #27784c; --highlight-marker: #095b30; }
+      .status-Removed { --highlight: #ffe0dd; --highlight-edge: #a53d3a; --highlight-marker: #982e2b; }
+      .status-Changed { --highlight: #fff1bd; --highlight-edge: #9c6500; --highlight-marker: #754900; }
+      .status-Unchanged { --highlight: #e7edf5; --highlight-edge: #576d87; --highlight-marker: #40556e; }
       .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
       @media (max-width: 700px) {
@@ -187,8 +191,10 @@
         .Removed, .Removed > .row-identity { background: #4a2a31; }
         .Changed, .Changed > .row-identity { background: #443819; }
         .Unchanged, .Unchanged > .row-identity { background: #29384b; }
-        .changed-cell { background: #59451a; box-shadow: inset 3px 0 #f0c45e; }
-        .change-marker { color: #ffdf85; }
+        .status-Added { --highlight: #245b42; --highlight-edge: #80dba6; --highlight-marker: #a8edc2; }
+        .status-Removed { --highlight: #693941; --highlight-edge: #f3999b; --highlight-marker: #ffc0bc; }
+        .status-Changed { --highlight: #59451a; --highlight-edge: #f0c45e; --highlight-marker: #ffdf85; }
+        .status-Unchanged { --highlight: #3d5069; --highlight-edge: #a8bdd9; --highlight-marker: #d2e0f4; }
       }
     </style>
   </head>
@@ -276,7 +282,7 @@
         <div class="panel-header">
           <h2 id="all-heading">All fields</h2>
           <p>Each comparison row shows the old record above the new record.</p>
-          <p class="legend">Highlighted cells marked with * differ. <code>null</code> is a null value; <code>—</code> means the side has no value.</p>
+          <p class="legend">Highlighted cells marked with * differ; their color reflects the join status (green for Added, red for Removed, yellow for Changed, neutral for Unchanged). <code>null</code> is a null value; <code>—</code> means the side has no value.</p>
         </div>
         {% if rows %}
         <div class="table-wrap" role="region" aria-label="All fields table, scroll horizontally for more columns" tabindex="0">
@@ -301,7 +307,7 @@
                 <td>{{ row.status }}</td>
                 <td>Old</td>
                 {% for field, old_value, new_value in values %}
-                <td{% if field in changed %} class="changed-cell"{% endif %}>{{ old_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
+                <td{% if field in changed %} class="changed-cell status-{{ row.status }}"{% endif %}>{{ old_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
                 {% endfor %}
               </tr>
               <tr>
@@ -309,7 +315,7 @@
                 <td>{{ row.status }}</td>
                 <td>New</td>
                 {% for field, old_value, new_value in values %}
-                <td{% if field in changed %} class="changed-cell"{% endif %}>{{ new_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
+                <td{% if field in changed %} class="changed-cell status-{{ row.status }}"{% endif %}>{{ new_value }}{% if field in changed %}<span class="change-marker" aria-label="changed">*</span>{% endif %}</td>
                 {% endfor %}
               </tr>
               {% endfor %}

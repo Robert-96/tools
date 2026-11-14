@@ -358,7 +358,7 @@ def test_html_caches_changed_fields(monkeypatch):
     monkeypatch.setattr(descriptor, "func", counting_changed_fields)
     html = render_html([row])
     assert len(calls) == 1
-    assert html.count('class="changed-cell"') == 2
+    assert html.count('class="changed-cell status-Changed"') == 2
     assert row.changed_fields == {"value"}
     assert len(calls) == 1
 
@@ -435,7 +435,7 @@ def test_html_tables_show_differences_and_paired_rows():
         assert [cell["text"] for cell in old_row[:3]] == [row.identity, row.status, "Old"]
         assert [cell["text"] for cell in new_row[:3]] == [row.identity, row.status, "New"]
         for field, old_cell, new_cell in zip(row.fields, old_row[3:], new_row[3:]):
-            expected = "changed-cell" if field in row.changed_fields else None
+            expected = f"changed-cell status-{row.status}" if field in row.changed_fields else None
             assert old_cell["class"] == new_cell["class"] == expected
 
     assert [(row[0]["text"], row[2]["text"]) for row in changes[1:]] == [
@@ -451,6 +451,27 @@ def test_html_tables_show_differences_and_paired_rows():
     assert unchanged.changed_fields == {"old_only", "new_only"}
     assert any(line[0]["text"] == unchanged.identity for line in changes[1:])
     assert 'aria-label="changed"' in html
+
+
+@pytest.mark.parametrize(
+    ("status", "old_values", "new_values", "old_text", "new_text"),
+    [
+        ("Added", None, {"value": "new"}, "—*", '"new"*'),
+        ("Removed", {"value": "old"}, None, '"old"*', "—*"),
+        ("Changed", {"value": "old"}, {"value": "new"}, '"old"*', '"new"*'),
+        ("Unchanged", {"value": None}, {}, "null*", "—*"),
+    ],
+)
+def test_html_highlights_match_join_status(status, old_values, new_values, old_text, new_text):
+    old_record = {"values": old_values} if old_values is not None else None
+    new_record = {"values": new_values} if new_values is not None else None
+    row = ReportRow("key", status, ("value",), old_record, new_record)
+    html = render_html([row], keep_all=True)
+    _, all_fields = parse_tables(html)
+    old_cell, new_cell = all_fields[1][-1], all_fields[2][-1]
+    assert old_cell["class"] == new_cell["class"] == f"changed-cell status-{status}"
+    assert (old_cell["text"], new_cell["text"]) == (old_text, new_text)
+    assert html.count('aria-label="changed"') == 2
 
 
 def test_html_does_not_highlight_equal_rows_and_supports_duplicate_matches():
