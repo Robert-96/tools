@@ -45,8 +45,10 @@ rows are matched by index (usually position for CSV and JSON files). Join's
 status limitations described below also apply to these reports. Quoted values
 are strings; `null` is a null value and `—` means the side has no value.
 The HTML report contains a table of differing fields and an all-fields table
-with old and new rows and highlighted differences. A column present on only
-one side is a difference, even if join labels the row `Unchanged`. Without
+with old and new rows and highlighted differences. Its overview counts
+displayed join-result rows by status; section links provide quick navigation.
+A column present on only one side is a difference, even if join labels the
+row `Unchanged`. Without
 `--keep-all`, join filters such rows before the report can display them.
 
 To create a unified-style diff from the same join comparison:

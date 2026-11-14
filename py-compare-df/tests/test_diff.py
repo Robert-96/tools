@@ -405,9 +405,46 @@ def test_html_does_not_highlight_equal_rows_and_supports_duplicate_matches():
 
     old = pd.DataFrame({"value": ["old1", "old2"]}, index=["key", "key"])
     new = pd.DataFrame({"value": ["new1", "new2"]}, index=["key", "key"])
-    changes, all_fields = parse_tables(render_html(report_rows(old, new, None, False)))
+    markup = render_html(report_rows(old, new, None, False))
+    assert "<dt>Comparison rows</dt><dd>4</dd>" in markup
+    assert "<dt>Changed</dt><dd>4</dd>" in markup
+    changes, all_fields = parse_tables(markup)
     assert len(changes) == 5
     assert len(all_fields) == 9
+
+
+@pytest.mark.parametrize(
+    ("statuses", "expected"),
+    [
+        ([], (0, 0, 0, 0, 0)),
+        (["Changed", "Added", "Removed", "Unchanged"], (4, 1, 1, 1, 1)),
+        (["Changed", "Changed", "Unchanged"], (3, 2, 0, 0, 1)),
+    ],
+)
+def test_html_status_summary_and_navigation(statuses, expected):
+    rows = [ReportRow("duplicate", status, (), None, None) for status in statuses]
+    html = render_html(rows)
+    for label, count in zip(("Comparison rows", "Changed", "Added", "Removed", "Unchanged"), expected):
+        assert f"<dt>{label}</dt><dd>{count}</dd>" in html
+    assert 'href="#changed-fields"' in html and 'id="changed-fields"' in html
+    assert 'href="#all-fields"' in html and 'id="all-fields"' in html
+    assert "Each count represents a comparison result. Some statuses may be inaccurate when values are missing or columns differ." in html
+    assert "<script" not in html and 'rel="stylesheet"' not in html
+
+
+def test_html_table_accessibility_and_empty_state():
+    empty = render_html([])
+    assert "No differing fields to display." in empty
+    assert "No comparison rows to display." in empty
+    old = pd.DataFrame({"value": ["old"]})
+    new = pd.DataFrame({"value": ["new"]})
+    html = render_html(report_rows(old, new, None, False))
+    assert html.count('role="region"') == 2
+    assert html.count('tabindex="0"') == 2
+    assert '<caption class="sr-only">Changed fields with old and new values</caption>' in html
+    assert '<caption class="sr-only">All fields, with old and new records on consecutive rows</caption>' in html
+    assert 'aria-label="changed"' in html
+    assert '<tr class="pair-start">' in html
 
 
 def test_html_field_comparison_uses_raw_values_and_presence():
@@ -443,9 +480,12 @@ def test_html_schema_only_difference_obeys_join_filtering():
     new = pd.DataFrame({"id": [1], "shared": ["same"]})
     filtered = report_rows(old, new, ["id"], False)
     assert filtered == []
+    assert "<dt>Comparison rows</dt><dd>0</dd>" in render_html(filtered)
     retained = report_rows(old, new, ["id"], True)
     assert retained[0].status == "Unchanged"
-    changes, all_fields = parse_tables(render_html(retained))
+    markup = render_html(retained)
+    assert "<dt>Unchanged</dt><dd>1</dd>" in markup
+    changes, all_fields = parse_tables(markup)
     assert [line[2]["text"] for line in changes[1:]] == ["old_only"]
     assert all_fields[1][-1]["text"] == "null*"
     assert all_fields[2][-1]["text"] == "—*"
