@@ -475,15 +475,23 @@ def test_html_does_not_highlight_equal_rows_and_supports_duplicate_matches():
     ("statuses", "expected"),
     [
         ([], (0, 0, 0, 0)),
-        (["Changed", "Added", "Removed", "Unchanged"], (4, 1, 1, 1)),
-        (["Changed", "Changed", "Unchanged"], (3, 2, 0, 0)),
+        (["Changed", "Added", "Removed", "Unchanged"], (3, 1, 1, 1)),
+        (["Changed", "Changed", "Unchanged"], (2, 2, 0, 0)),
+        (["Unchanged", "Unchanged"], (0, 0, 0, 0)),
     ],
 )
-def test_html_status_summary_and_navigation(statuses, expected):
+@pytest.mark.parametrize("keep_all", [False, True])
+def test_html_status_summary_and_navigation(statuses, expected, keep_all):
     rows = [ReportRow("duplicate", status, (), None, None) for status in statuses]
-    html = render_html(rows)
+    html = render_html(rows, keep_all=keep_all)
     for label, count in zip(("Changed Rows", "Changed", "Added", "Removed"), expected):
         assert f"<dt>{label}</dt><dd>{count}</dd>" in html
+    if keep_all:
+        assert f"<dt>Total</dt><dd>{len(statuses)}</dd>" in html
+        assert f"<dt>Unchanged</dt><dd>{statuses.count('Unchanged')}</dd>" in html
+    else:
+        assert "<dt>Total</dt>" not in html
+        assert "<dt>Unchanged</dt>" not in html
     assert 'href="#changed-fields"' in html and 'id="changed-fields"' in html
     assert 'href="#all-fields"' in html and 'id="all-fields"' in html
     assert "Each count represents a comparison result. Some statuses may be inaccurate when values are missing or columns differ." in html
@@ -493,6 +501,7 @@ def test_html_status_summary_and_navigation(statuses, expected):
 def test_html_table_accessibility_and_empty_state():
     empty = render_html([])
     assert empty.count("No comparison rows were returned.") == 2
+    assert empty.count('<a href="#top">Back to top</a>') == 2
     old = pd.DataFrame({"value": ["old"]})
     new = pd.DataFrame({"value": ["new"]})
     html = render_html(report_rows(old, new, None, False))
@@ -544,8 +553,10 @@ def test_html_schema_only_difference_obeys_join_filtering():
     assert "<dt>Changed Rows</dt><dd>0</dd>" in render_html(filtered)
     retained = report_rows(old, new, ["id"], True)
     assert retained[0].status == "Unchanged"
-    markup = render_html(retained)
-    assert "<dt>Changed Rows</dt><dd>1</dd>" in markup
+    markup = render_html(retained, keep_all=True)
+    assert "<dt>Changed Rows</dt><dd>0</dd>" in markup
+    assert "<dt>Total</dt><dd>1</dd>" in markup
+    assert "<dt>Unchanged</dt><dd>1</dd>" in markup
     changes, all_fields = parse_tables(markup)
     assert [line[2]["text"] for line in changes[1:]] == ["old_only"]
     assert all_fields[1][-1]["text"] == "null*"
