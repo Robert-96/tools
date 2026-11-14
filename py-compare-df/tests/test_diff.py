@@ -83,8 +83,8 @@ def test_diff_api_dispatches_and_returns_paths(tmp_path, monkeypatch, extension)
         compare_calls.append((left, right, method, on, keep_all))
         return result
 
-    def fake_reporter(rows):
-        calls.append(rows)
+    def fake_reporter(rows, title, on, keep_all):
+        calls.append((rows, title, on, keep_all))
         return "content"
 
     monkeypatch.setattr(diff_module, "compare", fake_compare)
@@ -97,7 +97,8 @@ def test_diff_api_dispatches_and_returns_paths(tmp_path, monkeypatch, extension)
     assert len(compare_calls) == 1
     assert compare_calls[0][0] is old and compare_calls[0][1] is new
     assert compare_calls[0][2:] == ("join", None, True)
-    assert calls[0][0].values == (("value", '"from-result"', '"result-new"'),)
+    assert calls[0][0][0].values == (("value", '"from-result"', '"result-new"'),)
+    assert calls[0][1:] == ("DataFrame diff", None, True)
     pd.testing.assert_frame_equal(old, old_copy)
     pd.testing.assert_frame_equal(new, new_copy)
 
@@ -138,6 +139,63 @@ def test_diff_api_produces_each_format_and_overwrites_existing_output(tmp_path, 
     assert output.read_text(encoding="utf-8") != "stale"
 
 
+@pytest.mark.parametrize("extension", [".md", ".html"])
+@pytest.mark.parametrize("keep_all", [False, True])
+def test_report_context_escapes_title_and_keys(tmp_path, extension, keep_all):
+    old = pd.DataFrame({"<id>": [1], "key|name": ["x"], "value": ["old"]})
+    new = pd.DataFrame({"<id>": [1], "key|name": ["x"], "value": ["new"]})
+    output = tmp_path / f"report{extension}"
+    diff_module.diff(old, new, output, on=["<id>", "key|name"], keep_all=keep_all, title="<report> & name")
+    content = output.read_text(encoding="utf-8")
+    assert "&lt;report&gt; &amp; name" in content
+    assert "&lt;id&gt;" in content
+    if extension == ".html":
+        assert "<title>&lt;report&gt; &amp; name</title>" in content
+        assert "<h1>&lt;report&gt; &amp; name</h1>" in content
+        assert "<strong>Matching:</strong> &lt;id&gt;, key|name" in content
+        assert f"<strong>Include unchanged rows:</strong> {'Yes' if keep_all else 'No'}" in content
+    else:
+        assert "# &lt;report&gt; &amp; name" in content
+        assert "**Matching:** &lt;id&gt;, key&#124;name" in content
+        assert f"**Include unchanged rows:** {'Yes' if keep_all else 'No'}" in content
+
+
+@pytest.mark.parametrize("extension", [".md", ".html"])
+def test_report_defaults_display_index_matching_even_without_rows(tmp_path, extension):
+    frame = pd.DataFrame({"value": [1]})
+    output = tmp_path / f"report{extension}"
+    diff_module.diff(frame, frame, output)
+    content = output.read_text(encoding="utf-8")
+    assert "DataFrame diff" in content
+    assert "Matching:" in content and "Index" in content
+    assert "Include unchanged rows:" in content and "No" in content
+
+
+@pytest.mark.parametrize("extension", [".md", ".html"])
+def test_cli_title_uses_only_input_names(tmp_path, extension):
+    inputs_dir = tmp_path / "private-directory"
+    inputs_dir.mkdir()
+    old, new = inputs_dir / "old.csv", inputs_dir / "new.csv"
+    old.write_text("value\nbefore\n", encoding="utf-8")
+    new.write_text("value\nafter\n", encoding="utf-8")
+    output = tmp_path / f"report{extension}"
+    result = run_diff(old, new, "--output", output)
+    assert result.returncode == 0, result.stderr
+    content = output.read_text(encoding="utf-8")
+    assert "old.csv → new.csv" in content
+    assert "private-directory" not in content
+
+
+def test_custom_title_does_not_change_patch(tmp_path):
+    old = pd.DataFrame({"value": ["old"]})
+    new = pd.DataFrame({"value": ["new"]})
+    output = tmp_path / "report.diff"
+    diff_module.diff(old, new, output)
+    original = output.read_bytes()
+    diff_module.diff(old, new, output, title="Custom title")
+    assert output.read_bytes() == original
+
+
 def test_diff_api_rejects_unsupported_format_without_writing(tmp_path):
     frame = pd.DataFrame({"value": [1]})
     with pytest.raises(ValueError, match="Unsupported output format"):
@@ -164,8 +222,8 @@ def test_cli_delegates_to_diff(tmp_path, monkeypatch, capsys):
     new_path.write_text("value\nnew\n", encoding="utf-8")
     calls = []
 
-    def fake_diff(old, new, path, on, keep_all):
-        calls.append((old, new, path, on, keep_all))
+    def fake_diff(old, new, path, on, keep_all, title):
+        calls.append((old, new, path, on, keep_all, title))
         return path
 
     monkeypatch.setattr(diff_module, "diff", fake_diff)
@@ -174,7 +232,7 @@ def test_cli_delegates_to_diff(tmp_path, monkeypatch, capsys):
     assert len(calls) == 1
     assert calls[0][0]["value"].tolist() == ["old"]
     assert calls[0][1]["value"].tolist() == ["new"]
-    assert calls[0][2:] == (output, None, True)
+    assert calls[0][2:] == (output, None, True, "old.csv → new.csv")
     assert f"Diff written to: {output}" in capsys.readouterr().out
 
 
@@ -206,16 +264,16 @@ def test_html_escapes_all_fields_and_rejects_invalid_status():
 
 def test_html_renders_status_without_value_columns():
     result = render_html([ReportRow("key", "Added", ())])
-    assert '<th scope="row">key</th>' in result
+    assert '<th scope="row" class="row-identity">key</th>' in result
     assert "<td>Added</td>" in result
-    assert "No differing fields to display." in result
+    assert "No fields differ among the displayed comparison rows." in result
     assert "<td>Old</td>" in result and "<td>New</td>" in result
 
 
 def test_empty_report_and_nulls():
     empty = pd.DataFrame({"id": pd.Series(dtype="int64"), "value": pd.Series(dtype="object")})
     assert "No differences" in render_markdown(report_rows(empty, empty, ["id"], False))
-    assert "No differing fields" in render_html(report_rows(empty, empty, ["id"], False))
+    assert "No comparison rows were returned." in render_html(report_rows(empty, empty, ["id"], False))
     old = pd.DataFrame({"id": [1], "anchor": ["present"], "value": [None]})
     new = pd.DataFrame({"id": [1], "anchor": ["present"], "value": ["new"]})
     row = report_rows(old, new, ["id"], False)[0]
@@ -398,15 +456,15 @@ def test_html_tables_show_differences_and_paired_rows():
 def test_html_does_not_highlight_equal_rows_and_supports_duplicate_matches():
     same = pd.DataFrame({"value": ["same"]}, index=["unchanged"])
     html = render_html(report_rows(same, same, None, True))
-    assert "No differing fields to display." in html
+    assert "No fields differ among the displayed comparison rows." in html
     table, = parse_tables(html)
     assert len(table) == 3
-    assert all(cell["class"] is None for line in table for cell in line)
+    assert all(cell["class"] in (None, "row-identity") for line in table for cell in line)
 
     old = pd.DataFrame({"value": ["old1", "old2"]}, index=["key", "key"])
     new = pd.DataFrame({"value": ["new1", "new2"]}, index=["key", "key"])
     markup = render_html(report_rows(old, new, None, False))
-    assert "<dt>Comparison rows</dt><dd>4</dd>" in markup
+    assert "<dt>Changed Rows</dt><dd>4</dd>" in markup
     assert "<dt>Changed</dt><dd>4</dd>" in markup
     changes, all_fields = parse_tables(markup)
     assert len(changes) == 5
@@ -416,15 +474,15 @@ def test_html_does_not_highlight_equal_rows_and_supports_duplicate_matches():
 @pytest.mark.parametrize(
     ("statuses", "expected"),
     [
-        ([], (0, 0, 0, 0, 0)),
-        (["Changed", "Added", "Removed", "Unchanged"], (4, 1, 1, 1, 1)),
-        (["Changed", "Changed", "Unchanged"], (3, 2, 0, 0, 1)),
+        ([], (0, 0, 0, 0)),
+        (["Changed", "Added", "Removed", "Unchanged"], (4, 1, 1, 1)),
+        (["Changed", "Changed", "Unchanged"], (3, 2, 0, 0)),
     ],
 )
 def test_html_status_summary_and_navigation(statuses, expected):
     rows = [ReportRow("duplicate", status, (), None, None) for status in statuses]
     html = render_html(rows)
-    for label, count in zip(("Comparison rows", "Changed", "Added", "Removed", "Unchanged"), expected):
+    for label, count in zip(("Changed Rows", "Changed", "Added", "Removed"), expected):
         assert f"<dt>{label}</dt><dd>{count}</dd>" in html
     assert 'href="#changed-fields"' in html and 'id="changed-fields"' in html
     assert 'href="#all-fields"' in html and 'id="all-fields"' in html
@@ -434,8 +492,7 @@ def test_html_status_summary_and_navigation(statuses, expected):
 
 def test_html_table_accessibility_and_empty_state():
     empty = render_html([])
-    assert "No differing fields to display." in empty
-    assert "No comparison rows to display." in empty
+    assert empty.count("No comparison rows were returned.") == 2
     old = pd.DataFrame({"value": ["old"]})
     new = pd.DataFrame({"value": ["new"]})
     html = render_html(report_rows(old, new, None, False))
@@ -445,6 +502,10 @@ def test_html_table_accessibility_and_empty_state():
     assert '<caption class="sr-only">All fields, with old and new records on consecutive rows</caption>' in html
     assert 'aria-label="changed"' in html
     assert '<tr class="pair-start">' in html
+    assert html.count('href="#top"') == 2
+    assert 'id="top"' in html
+    assert html.count('scope="col" class="row-identity"') == 2
+    assert 'position: sticky;' in html
 
 
 def test_html_field_comparison_uses_raw_values_and_presence():
@@ -480,11 +541,11 @@ def test_html_schema_only_difference_obeys_join_filtering():
     new = pd.DataFrame({"id": [1], "shared": ["same"]})
     filtered = report_rows(old, new, ["id"], False)
     assert filtered == []
-    assert "<dt>Comparison rows</dt><dd>0</dd>" in render_html(filtered)
+    assert "<dt>Changed Rows</dt><dd>0</dd>" in render_html(filtered)
     retained = report_rows(old, new, ["id"], True)
     assert retained[0].status == "Unchanged"
     markup = render_html(retained)
-    assert "<dt>Unchanged</dt><dd>1</dd>" in markup
+    assert "<dt>Changed Rows</dt><dd>1</dd>" in markup
     changes, all_fields = parse_tables(markup)
     assert [line[2]["text"] for line in changes[1:]] == ["old_only"]
     assert all_fields[1][-1]["text"] == "null*"
@@ -568,7 +629,7 @@ def test_force_can_overwrite_input_via_symlink(tmp_path, inputs):
     assert old.read_bytes() == before
     result = run_diff(old, new, "--output", alias, "--on", "id", "--force")
     assert result.returncode == 0, result.stderr
-    assert "# DataFrame diff" in old.read_text(encoding="utf-8")
+    assert "# old.csv → new.csv" in old.read_text(encoding="utf-8")
 
 
 def test_force_rejects_directory(tmp_path, inputs):
