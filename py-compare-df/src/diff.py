@@ -150,11 +150,18 @@ def _escape_markdown(value: str) -> str:
     return escaped.replace("|", "&#124;").replace("\n", "<br>").replace("\r", "&#13;")
 
 
-def report_markdown(rows: list[ReportRow]) -> str:
+def report_markdown(
+    rows: list[ReportRow], title: str = "DataFrame diff",
+    on: list[str] | None = None, keep_all: bool = False,
+) -> str:
     """Generate a Markdown report from the join comparison."""
 
+    matching = ", ".join(_escape_markdown(key) for key in on) if on is not None else "Index"
     lines = [
-        "# DataFrame diff",
+        f"# {_escape_markdown(title)}",
+        "",
+        f"**Matching:** {matching}  ",
+        f"**Include unchanged rows:** {'Yes' if keep_all else 'No'}",
         "",
         "Join statuses use a null/suffix heuristic; see the documentation for limitations.",
         "",
@@ -172,7 +179,10 @@ def report_markdown(rows: list[ReportRow]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def report_html(rows: list[ReportRow]) -> str:
+def report_html(
+    rows: list[ReportRow], title: str = "DataFrame diff",
+    on: list[str] | None = None, keep_all: bool = False,
+) -> str:
     """Generate an HTML report from the join comparison."""
 
     allowed = {"Added", "Removed", "Changed", "Unchanged"}
@@ -186,7 +196,7 @@ def report_html(rows: list[ReportRow]) -> str:
         keep_trailing_newline=True,
     )
 
-    return environment.get_template("diff.html").render(rows=rows)
+    return environment.get_template("diff.html").render(rows=rows, title=title, on=on, keep_all=keep_all)
 
 
 def _to_json(value: object) -> object:
@@ -219,8 +229,15 @@ def _to_json(value: object) -> object:
     return value
 
 
-def report_patch(rows: list[ReportRow]) -> str:
-    """Render changed comparison rows as unified-style old/new JSON lines."""
+def report_patch(
+    rows: list[ReportRow], title: str = "DataFrame diff",
+    on: list[str] | None = None, keep_all: bool = False,
+) -> str:
+    """Render changed comparison rows as unified-style old/new JSON lines.
+
+    The report context is accepted for consistent reporter dispatch, but is
+    not included in the unified-style output.
+    """
 
     lines = ["--- old", "+++ new"]
     old_position = new_position = 0
@@ -252,7 +269,7 @@ def report_patch(rows: list[ReportRow]) -> str:
     return "\n".join(lines) + "\n"
 
 
-Reporter = Callable[[list[ReportRow]], str]
+Reporter = Callable[[list[ReportRow], str, list[str] | None, bool], str]
 reporters: dict[str, Reporter] = {
     ".md": report_markdown,
     ".html": report_html,
@@ -266,10 +283,12 @@ def diff(
     output: str | Path,
     on: list[str] | None = None,
     keep_all: bool = False,
+    title: str = "DataFrame diff",
 ) -> Path:
     """Compare DataFrames using join, write a report, and return its path.
 
     The output extension selects Markdown, HTML, or a unified-style diff.
+    The title is used in Markdown and HTML; unified-style output is unchanged.
     Existing files are overwritten.
 
     """
@@ -289,7 +308,7 @@ def diff(
 
     #     print(f"Processing row with status: {row!r}")
 
-    content = reporter(report_rows)
+    content = reporter(report_rows, title, on, keep_all)
 
     with output.open("w", encoding="utf-8", newline="\n") as file:
         file.write(content)
@@ -318,7 +337,7 @@ def cli() -> None:
     try:
         old = import_df(args.old)
         new = import_df(args.new)
-        written = diff(old, new, args.output, on=args.on, keep_all=args.keep_all)
+        written = diff(old, new, args.output, on=args.on, keep_all=args.keep_all, title=f"{args.old.name} → {args.new.name}")
     except (OSError, ValueError, KeyError, TypeError) as exc:
         parser.exit(2, f"{parser.prog}: error: {exc}\n")
 
