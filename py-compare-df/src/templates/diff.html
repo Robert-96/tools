@@ -146,8 +146,8 @@
       <section aria-labelledby="overview-heading">
         <h2 id="overview-heading" class="sr-only">Join status overview</h2>
         <dl class="summary">
-          <div class="metric"><dt>Comparison rows</dt><dd>{{ rows | length }}</dd></div>
-          {% for status in ("Changed", "Added", "Removed", "Unchanged") %}
+          <div class="metric"><dt>Changed Rows</dt><dd>{{ rows | length }}</dd></div>
+          {% for status in ("Changed", "Added", "Removed") %}
           <div class="metric"><dt>{{ status }}</dt><dd>{{ rows | selectattr("status", "equalto", status) | list | length }}</dd></div>
           {% endfor %}
         </dl>
