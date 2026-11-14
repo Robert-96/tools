@@ -158,6 +158,38 @@
         .panel-header { padding: 1rem; }
         .empty { margin: 0 1rem 1rem; }
       }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --ink: #e6edf7;
+          --muted: #b6c4d6;
+          --line: #40516a;
+          --surface: #1c293c;
+        }
+
+        body { background: #101927; }
+        a { color: #a9c8ff; }
+        a:focus-visible, .table-wrap:focus-visible { outline-color: #9dc3ff; }
+        .eyebrow { color: #a9c8ff; }
+        .metric { box-shadow: 0 1px 2px #0006; }
+        .navigation a, .back-to-top a { background: #22334b; border-color: #607797; }
+        .navigation a:hover, .back-to-top a:hover { background: #344c6b; }
+        .panel { box-shadow: 0 6px 20px #0004; }
+        .empty { border-color: #60738b; }
+        th, td { border-bottom-color: #40516a; }
+        thead th { background: #26364d; color: #d3deec; }
+        tbody th, .row-identity { background: #202f44; }
+        .row-identity { box-shadow: 2px 0 3px #0008; }
+        thead .row-identity { background: #26364d; }
+        .all-fields-table tr.pair-start > * { border-top-color: #60738b; }
+        .Added, .Added > .row-identity { background: #193b30; }
+        .Removed, .Removed > .row-identity { background: #4a2a31; }
+        .Changed, .Changed > .row-identity { background: #443819; }
+        .Unchanged, .Unchanged > .row-identity { background: #29384b; }
+        .changed-cell { background: #59451a; box-shadow: inset 3px 0 #f0c45e; }
+        .change-marker { color: #ffdf85; }
+      }
     </style>
   </head>
   <body>

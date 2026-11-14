@@ -517,6 +517,14 @@ def test_html_table_accessibility_and_empty_state():
     assert 'position: sticky;' in html
 
 
+def test_html_automatically_supports_light_and_dark_themes():
+    html = render_html([])
+    assert "color-scheme: light;" in html
+    assert "@media (prefers-color-scheme: dark)" in html
+    assert "color-scheme: dark;" in html
+    assert "<script" not in html and 'rel="stylesheet"' not in html
+
+
 def test_html_field_comparison_uses_raw_values_and_presence():
     row = ReportRow(
         "key", "Changed", ("number", "null", "literal", "missing", "both_missing"),
